@@ -235,13 +235,13 @@ library(rJava)
 git_directory <- 'C:/Git/QSAR_output_merger'
 
 # Input directory (for input files other than very large databases)
-input_directory <- 'C:/Git/QSAR_output_merger/input files'
+input_directory <- 'C:/Git/QSAR_output_merger/Input'
 
 # output directory (Main outputs)
-output_directory <- 'C:/Git/QSAR_output_merger/output files'
+output_directory <- 'C:/Git/QSAR_output_merger/Output'
 
 # intermediate files directory (Dumpfiles, working files etc)
-intermediate_directory <- 'C:/Git/QSAR_output_merger/intermediate files'
+intermediate_directory <- 'C:/Git/QSAR_output_merger/Intermediate files'
 
 
 ## Paths to raw data (These can be very large files and may not be suited for storage in git directory)

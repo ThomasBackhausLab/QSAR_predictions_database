@@ -229,13 +229,28 @@ library(rJava)
 
 #######################
 
-## Set working directory (sub directories will be created by function:
+## Set working directory (sub directories will be created by function):
 
 # Git directory
 git_directory <- 'C:/Git/QSAR_output_merger'
 
-# General directory
-directory <- 'C:/Projects/QSARmerger/QSAR'
+# Input directory (for input files other than very large databases)
+input_directory <- 'C:/Git/QSAR_output_merger/input files'
+
+# output directory (Main outputs)
+output_directory <- 'C:/Git/QSAR_output_merger/output files'
+
+# intermediate files directory (Dumpfiles, working files etc)
+intermediate_directory <- 'C:/Git/QSAR_output_merger/intermediate files'
+
+
+## Paths to raw data (These can be very large files and may not be suited for storage in git directory)
+EFSA_filepath = 'E:/Datasets/EFSA/Full table.xlsx'
+ECOTOX_filepath = 'E:/Datasets/US_EPA_ECOTOX/ECOTOX 09_15_2022 v8.Rda'
+
+
+# QSAR directory (function will make subfolders here)
+QSAR_directory <- 'C:/Projects/QSARmerger/QSAR'
 
 ## Set paths to your QSAR models
 vegapath <- 'C:/Program Files/Vega 1.1.5/vega-1.1.5-b48/VEGA.jar'
@@ -243,9 +258,6 @@ ecosarpath <- 'C:/Program Files/Ecosar 2.2/ecosarapplication/bin/ecosarapplicati
 testpath <- 'C:/Program Files/TEST 5.1.1.0/TEST.exe' 
 
 
-## Paths to raw data (Change these to fit your location and version)
-EFSA_filepath = 'E:/Datasets/EFSA/Full table.xlsx'
-ECOTOX_filepath = 'E:/Datasets/US_EPA_ECOTOX/ECOTOX 09_15_2022 v8.Rda'
 
 # # Load functions in order of first use (if any of these fails, pull a new version of the script)
 EFSA_import_function = dget('Functions/EFSA_import_function.R')
@@ -259,14 +271,6 @@ QSAR_add_inchikey_function = dget('Functions/QSAR_add_inchikey_function.R')
 QSAR_processing_function = dget('Functions/QSAR_processing_function.R')
 QSAR_subset_reduction_function = dget('Functions/QSAR_subset_reduction_function.R')
 
-# QSAR_EXP_merger_function = dget('QSAR_EXP_merger_function.R')
-
-# QSAR_add_pestclass_function = dget('QSAR_add_pestclass_function.R')
-
-# QSAR_calculate_exp_averages_function = dget('QSAR_calculate_exp_averages_function.R')
-# QSAR_scenario_performance_function = dget('QSAR_scenario_performance_function.R')
-# QSAR_vega_reliability_calculating_function = dget('QSAR_vega_reliability_calculating_function.R')
-# QSAR_regression_function = dget('QSAR_regression_function.R')
 
 ## Set script version
 version = 11
@@ -337,9 +341,7 @@ if(!is.null(EFSA_filepath) & !is.na(EFSA_filepath)){
   rm('EFSA_handle')
   
   # Save identifiers separately
-  save(EFSA_identifiers, file = 'EFSA_identifiers.Rda')
-  
-  # load(file = 'EFSA_identifiers.Rda')
+  save(EFSA_identifiers, file = paste0(intermediate_directory, '/EFSA_identifiers.Rda'))
   
 } else {
   

@@ -1458,20 +1458,6 @@ colnames(QSAR_all_wide) = str_replace_all(colnames(QSAR_all_wide), pattern = '(?
 # Replace all NA with -7777
 QSAR_all_wide[is.na(QSAR_all_wide)] = -7777
 
-
-# Get inchikeys for all compounds (if it isnt there already)
-if(!grepl(colnames(QSAR_all_wide), pattern = 'inchikey', ignore.case = T)){
-  temp_inchikeys = QSAR_add_inchikey_function(
-    rename(
-      rename(QSAR_all_wide, 
-             original_SMILES = META_original_SMILES), 
-      original_CAS = META_original_CAS)[,c('original_CAS', 'original_SMILES')], 
-    local_dumpfile = 'inchikey_dumpfile.Rda')
-  
-  # Add ichikeys to wide frame
-  QSAR_all_wide$META_InChIKey = temp_inchikeys$InChIKey
-}
-
 # Add internal database identifier for each compound
 QSAR_all_wide$META_QSARn = paste0('QSARn', as.numeric(rownames(QSAR_all_wide)))
 
@@ -1480,8 +1466,6 @@ QSAR_all_wide = QSAR_all_wide %>%
   relocate(META_InChIKey, .after = META_original_SMILES) %>%
   relocate(META_QSARn)
 
-# Some of the data is now in list class, change it to character
-test = as.data.frame(apply(QSAR_all_wide,2,as.character))
 
 ################################################################################
 #               4.2. Exporting output data                                     #
@@ -1489,9 +1473,10 @@ test = as.data.frame(apply(QSAR_all_wide,2,as.character))
 
 
 # Save the wide format dataframe in tab separated csv
-write.table(test, file = paste0('QSAR_all_wide_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+write.table(QSAR_all_wide, file = paste0('QSAR_all_wide_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
 
-QSAR_all_wide_new = fread(file = paste0('QSAR_all_wide_v', version, '.csv'), sep = '\t')
+# Double check save
+# QSAR_all_wide_new = fread(file = paste0('QSAR_all_wide_v', version, '.csv'), sep = '\t')
 
 
 

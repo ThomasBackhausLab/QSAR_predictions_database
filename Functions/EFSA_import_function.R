@@ -46,6 +46,7 @@ function(EFSA_filepath,
                         'active substance' = 'active substance',
                         'salts' = '\\.',
                         'medium' = 'freshwater'),
+         efsa_cir_dumpfile = paste0(intermediate_directory, '/EFSA_CIR_dump.Rda'),
          settings = NULL){
   
   # Get functions
@@ -136,11 +137,22 @@ function(EFSA_filepath,
     # Get all unique CAS
     EFSA_unique_cas = data.frame('original_CAS' = unique(EFSA_clean$CASNO))
     
+    # Set load of dumpfile or not
+    if(rerun){
+      
+      smiles_function_settings = c('no load', 'query cir')
+      
+    } else {
+      
+      smiles_function_settings = c('query cir')
+      
+    }
+    
     # Run function to get SMILES for EFSA
     # and make new dataframe with identifiers
     EFSA_identifiers = QSAR_add_smiles_function(identifiers_database = EFSA_unique_cas, 
-                                                local_dumpfile = 'EFSA_CIR_dump.Rda',
-                                                settings = c('no load', 'query cir'))
+                                                local_dumpfile = efsa_cir_dumpfile,
+                                                settings = smiles_function_settings)
     
     # Add smiles from the identifiers frame to the original EFSA frame
     EFSA_clean = merge(EFSA_clean, EFSA_identifiers, by.x = 'CASNO', by.y = 'original_CAS', all.x = T)
@@ -165,14 +177,14 @@ function(EFSA_filepath,
     
     # Save EFSA_filtered, for work on other systems
     print('Saving output')
-    save(EFSA_filtered, file = paste0('EFSA_filtered_', version, '.Rda'))
-    save(EFSA_identifiers, file = paste0('EFSA_identifiers_', version, '.Rda'))
+    save(EFSA_filtered, file = paste0(intermediate_directory, '/EFSA_filtered_', version, '.Rda'))
+    save(EFSA_identifiers, file = paste0(intermediate_directory, '/EFSA_identifiers_', version, '.Rda'))
     
   } else {
     
     # If we are loading cached version
-    load(file = paste0('EFSA_filtered_', version, '.Rda'))
-    load(file = paste0('EFSA_identifiers_', version, '.Rda'))
+    load(file = paste0(intermediate_directory, '/EFSA_filtered_', version, '.Rda'))
+    load(file = paste0(intermediate_directory, '/EFSA_identifiers_', version, '.Rda'))
     
   }
   

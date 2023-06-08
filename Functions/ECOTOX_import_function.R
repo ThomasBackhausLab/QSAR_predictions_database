@@ -45,6 +45,7 @@ function(ECOTOX_filepath,
                         'medium' = '(FW)|(NONE)',
                         'species' = c(daphnia_species, oecd_fish_species, oecd_algae_species),
                         'endpoint' = c('NOEC', 'EC50', 'LC50', 'IC50', 'LD50')),
+         ecotox_cir_dumpfile = paste0(intermediate_directory, '/ECOTOX_identifiers_cir_dump.Rda'),
          molweight_dump = NULL,
          settings = NULL){
   
@@ -115,8 +116,22 @@ function(ECOTOX_filepath,
     ECOTOX_unique_cas_fixed = as.cas(ECOTOX_unique_cas)
     ECOTOX_identifiers = data.frame(original_CAS = ECOTOX_unique_cas_fixed)
     
+    
+    # Set load of dumpfile or not
+    if(rerun){
+      
+      smiles_function_settings = c('no load', 'query cir')
+      
+    } else {
+      
+      smiles_function_settings = c('query cir')
+      
+    }
+    
     # Add SMILES from cir/pubchem using add_SMILES function
-    ECOTOX_identifiers = QSAR_add_smiles_function(ECOTOX_identifiers, local_dumpfile = 'ECOTOX_identifiers_cir_dump.Rda', )
+    ECOTOX_identifiers = QSAR_add_smiles_function(ECOTOX_identifiers, 
+                                                  local_dumpfile = ecotox_cir_dumpfile,
+                                                  settings = smiles_function_settings)
     
     
     # Add smiles from the identifiers frame to the original ECOTOX frame
@@ -136,13 +151,13 @@ function(ECOTOX_filepath,
     ECOTOX_filtered$Database = 'ECOTOX'
     
     # Save ECOTOX_filteredfiltered, for work on other systems
-    save(ECOTOX_filtered, file = paste0('ECOTOX_filtered_', version, '.Rda'))
-    save(ECOTOX_identifiers, file = paste0('ECOTOX_identifiers_', version, '.Rda'))
+    save(ECOTOX_filtered, file = paste0(intermediate_directory, '/ECOTOX_filtered_', version, '.Rda'))
+    save(ECOTOX_identifiers, file = paste0(intermediate_directory, '/ECOTOX_identifiers_', version, '.Rda'))
     
   } else {
     
-    load(file = paste0('ECOTOX_filtered_', version, '.Rda'))
-    load(file = paste0('ECOTOX_identifiers_', version, '.Rda'))
+    load(file = paste0(intermediate_directory, '/ECOTOX_filtered_', version, '.Rda'))
+    load(file = paste0(intermediate_directory, '/ECOTOX_identifiers_', version, '.Rda'))
     
   }
   

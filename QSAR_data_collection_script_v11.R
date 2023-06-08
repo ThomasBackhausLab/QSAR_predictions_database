@@ -202,24 +202,26 @@ gc() #free up memrory and report the memory usage.
 #BiocManager::install(c('ChemmineOB', 'ChemmineR'))
 
 #### Load packages ####
-packages <- c('readxl', 
+packages <- c('MASS',
               'dplyr',
-              'data.table',
-              'readr',
-              'stringr',
-              'webchem',
-              "ChemmineR",
-              "ChemmineOB",
               'tidyr',
-              'data.table',
-              'ggplot2',
-              'forcats',
-              'gridExtra',
-              'gridtext',
-              'grid',
-              'hms',
-              'MASS',
-              'R.utils')
+              'readr',
+              'readxl', 
+              'stringr',
+              'webchem')
+
+# Old packages not currently in use, but add them if something doesn't work
+# 'data.table',
+# "ChemmineR",
+# "ChemmineOB",
+# 'data.table',
+# 'ggplot2',
+# 'forcats',
+# 'gridExtra',
+# 'gridtext',
+# 'grid',
+# 'hms',
+# 'R.utils'
 
 lapply(packages, require, character.only = TRUE)
 
@@ -232,16 +234,16 @@ library(rJava)
 ## Set working directory (sub directories will be created by function):
 
 # Git directory
-git_directory <- 'C:/Git/QSAR_output_merger'
+git_directory <- 'C:/Git/QSAR_predictions_database'
 
 # Input directory (for input files other than very large databases)
-input_directory <- 'C:/Git/QSAR_output_merger/Input'
+input_directory <- 'C:/Git/QSAR_predictions_database/Input'
 
 # output directory (Main outputs)
-output_directory <- 'C:/Git/QSAR_output_merger/Output'
+output_directory <- 'C:/Git/QSAR_predictions_database/Output'
 
 # intermediate files directory (Dumpfiles, working files etc)
-intermediate_directory <- 'C:/Git/QSAR_output_merger/Intermediate files'
+intermediate_directory <- 'C:/Git/QSAR_predictions_database/Intermediate files'
 
 
 ## Paths to raw data (These can be very large files and may not be suited for storage in git directory)
@@ -331,8 +333,9 @@ if(!is.null(EFSA_filepath) & !is.na(EFSA_filepath)){
   # Import EFSA
   EFSA_handle = EFSA_import_function(EFSA_filepath,
                                      version = version,
-                                     rerun = T,
+                                     rerun = F,
                                      filters = EFSA_filters,
+                                     efsa_cir_dumpfile = paste0(intermediate_directory, '/EFSA_CIR_dump.Rda'),
                                      settings = NULL)
   
   # Separate data from unique identifiers frame
@@ -385,6 +388,7 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
                                          rerun = F,
                                          filters = ECOTOX_filters,
                                          molweight_dump = ECOTOX_molweights_file,
+                                         paste0(intermediate_directory, '/ECOTOX_identifiers_cir_dump.Rda'),
                                          settings = NULL)
   
   # Separate data from unique identifiers frame
@@ -393,7 +397,7 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
   rm('ECOTOX_handle')
   
   
-  save(ECOTOX_identifiers, file = 'ECOTOX_identifiers.Rda')
+  save(ECOTOX_identifiers, file = paste0(intermediate_directory, '/ECOTOX_identifiers.Rda'))
   #load(file = 'ECOTOX_identifiers.Rda')
 
 } else {
@@ -483,7 +487,7 @@ nrow(identifiers)
 identifiers = QSAR_add_inchikey_function(
   identifiers, 
   settings = NULL,
-  local_dumpfile = 'inchikey_dumpfile.Rda')
+  local_dumpfile = paste0(intermediate_directory, '/inchikey_dumpfile.Rda'))
 
 
 
@@ -491,22 +495,22 @@ identifiers = QSAR_add_inchikey_function(
 identifiers$molecule_number = seq(1, nrow(identifiers), 1)
 
 
-## Save the identifiers to files (CAS and SMILES)
+## Save the identifiers (CAS and SMILES) into the QSAR directory
 # CAS
 write.table(identifiers[,"original_CAS"],
-            file = paste0(directory, '/identifiers/CAS.txt'),
+            file = paste0(QSAR_directory, '/identifiers/CAS.txt'),
             col.names = F,
             row.names = F,
             quote = F)
 # SMILES
 write.table(identifiers[,"original_SMILES"],
-            file = paste0(directory, '/identifiers/SMILES.txt'),
+            file = paste0(QSAR_directory, '/identifiers/SMILES.txt'),
             col.names = F,
             row.names = F,
             quote = F)
 # CAS and SMILES
 write.table(identifiers[,c("original_CAS", "original_SMILES")],
-            file = paste0(directory, '/identifiers/CASSMILES.txt'),
+            file = paste0(QSAR_directory, '/identifiers/CASSMILES.txt'),
             sep = '\t',
             col.names = F,
             row.names = F,
@@ -517,7 +521,7 @@ if(nrow(identifiers) > 1000){
   
   # Save the first 1k entries
   write.table(identifiers[1:1000,"original_SMILES"],
-              file = paste0(directory, '/identifiers/SMILES_1to1000.txt'),
+              file = paste0(QSAR_directory, '/identifiers/SMILES_1to1000.txt'),
               col.names = F,
               row.names = F,
               quote = F)
@@ -526,7 +530,7 @@ if(nrow(identifiers) > 1000){
   if(nrow(identifiers) > 2000){
     
     write.table(identifiers[1001:2000,"original_SMILES"],
-                file = paste0(directory, '/identifiers/SMILES_1001to2000.txt'),
+                file = paste0(QSAR_directory, '/identifiers/SMILES_1001to2000.txt'),
                 col.names = F,
                 row.names = F,
                 quote = F)
@@ -535,7 +539,7 @@ if(nrow(identifiers) > 1000){
     if(nrow(identifiers) > 3000){
       
       write.table(identifiers[2001:3000,"original_SMILES"],
-                  file = paste0(directory, '/identifiers/SMILES_2001to3000.txt'),
+                  file = paste0(QSAR_directory, '/identifiers/SMILES_2001to3000.txt'),
                   col.names = F,
                   row.names = F,
                   quote = F)
@@ -543,7 +547,7 @@ if(nrow(identifiers) > 1000){
       # Save the 3k to end entries
       # Elongate this if more than 4k entries
       write.table(identifiers[3001:nrow(identifiers),"original_SMILES"],
-                  file = paste0(directory, '/identifiers/SMILES_3001toEnd.txt'),
+                  file = paste0(QSAR_directory, '/identifiers/SMILES_3001toEnd.txt'),
                   col.names = F,
                   row.names = F,
                   quote = F)
@@ -552,7 +556,7 @@ if(nrow(identifiers) > 1000){
     } else {
       # Not more than 3k entries, save 2k to end
       write.table(identifiers[2001:nrow(identifiers),"original_SMILES"],
-                  file = paste0(directory, '/identifiers/SMILES_2001toEnd.txt'),
+                  file = paste0(QSAR_directory, '/identifiers/SMILES_2001toEnd.txt'),
                   col.names = F,
                   row.names = F,
                   quote = F)
@@ -562,7 +566,7 @@ if(nrow(identifiers) > 1000){
   } else {
     # Not more than 2k entries, save 1k to end
     write.table(identifiers[1001:nrow(identifiers),"original_SMILES"],
-                file = paste0(directory, '/identifiers/SMILES_1001toEnd.txt'),
+                file = paste0(QSAR_directory, '/identifiers/SMILES_1001toEnd.txt'),
                 col.names = F,
                 row.names = F,
                 quote = F)
@@ -572,8 +576,8 @@ if(nrow(identifiers) > 1000){
   
 }
 
-save(experimental_dataset, file = paste0('experimental_dataset_post_merge_v', version, '.Rda'))
-save(identifiers, file = paste0('identifiers_post_merge_v', version, '.Rda'))
+save(experimental_dataset, file = paste0(intermediate_directory, '/experimental_dataset_post_merge_v', version, '.Rda'))
+save(identifiers, file = paste0(intermediate_directory, '/identifiers_post_merge_v', version, '.Rda'))
 
 #load(file = paste0('experimental_dataset_post_merge_v', version, '.Rda'))
 #load(file = paste0('identifiers_post_merge_v', version, '.Rda'))
@@ -592,7 +596,7 @@ j = 0
 identifiers_backup = identifiers
 
 # This part was rewritten to be a for loop instead of apply since the limiting factor isnt R's speed issues with for loops, but the API
-if(!file.exists(file = 'identifiers_cid_dump.Rda')){
+if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))){
   
   # Add CID as all NA to identifiers
   identifiers$CID = NA
@@ -617,13 +621,13 @@ if(!file.exists(file = 'identifiers_cid_dump.Rda')){
     # In this loop we save every 10 times we add a new CID due to the volatility of the API
     if(j %% 10 == 0){
       print(paste0('Saving progress. Row number ', i))
-      save(identifiers, file = 'identifiers_cid_dump.Rda')
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
     }
     
     # Save a final time upon completion
     if(i == nrow(identifiers)){
       print('Collection finished, saving...')
-      save(identifiers, file = 'identifiers_cid_dump.Rda')
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
     }
     
     j = j + 1
@@ -639,7 +643,7 @@ if(!file.exists(file = 'identifiers_cid_dump.Rda')){
   temp_identifiers =  identifiers
   
   # Get the dumpfile/backup
-  load(file = 'identifiers_cid_dump.Rda')
+  load(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
   
   # Rename dumpfile identifiers
   old_identifiers =  identifiers
@@ -670,12 +674,12 @@ if(!file.exists(file = 'identifiers_cid_dump.Rda')){
     # In this loop we save every 10 times we add a new CID due to the volatility of the API
     if(j %% 10 == 0){
       print(paste0('Saving progress. Row number ', i))
-      save(identifiers, file = 'identifiers_cid_dump.Rda')
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
     }
     
     if(i == nrow(identifiers)){
       print('Collection finished, saving...')
-      save(identifiers, file = 'identifiers_cid_dump.Rda')
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
     }
     
     j = j + 1
@@ -754,8 +758,8 @@ print(identifiers[is.na(identifiers$CID),"original_CAS"])
 sum(is.na(identifiers$CID))
 print(identifiers[is.na(identifiers$CID),"original_CAS"])
 
-save(identifiers, file = 'identifiers_cid_dump.Rda')
-load(file = 'identifiers_cid_dump.Rda')
+save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
+load(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
 
 
 ### Get logp and pka
@@ -765,10 +769,10 @@ logp_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = N
 pka_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = NA, 'SourceID' = NA)
 
 # If we have run this script before we load the output
-if(file.exists('logp_dump.Rda') & file.exists('pka_dump.Rda')){
+if(file.exists(paste0(intermediate_directory, '/logp_dump.Rda')) & file.exists(paste0(intermediate_directory, '/pka_dump.Rda'))){
   
-  load(file = 'logp_dump.Rda')
-  load(file = 'pka_dump.Rda')
+  load(file = paste0(intermediate_directory, '/logp_dump.Rda'))
+  load(file = paste0(intermediate_directory, '/pka_dump.Rda'))
   
 }
 
@@ -822,8 +826,8 @@ for(i in 1:nrow(identifiers)){
   # Every one hundred compounds we save the results
   if(i %% 100 == 0){
     
-    save(logp_frame, file = 'logp_dump.Rda')
-    save(pka_frame, file = 'pka_dump.Rda')
+    save(logp_frame, file = paste0(intermediate_directory, '/logp_dump.Rda'))
+    save(pka_frame, file = paste0(intermediate_directory, '/pka_dump.Rda'))
     
   }
   
@@ -832,8 +836,8 @@ for(i in 1:nrow(identifiers)){
 # Drop the NA rows in the beginning and do a last save
 logp_frame = logp_frame[rowSums(is.na(logp_frame)) != ncol(logp_frame),]
 pka_frame = pka_frame[rowSums(is.na(pka_frame)) != ncol(pka_frame),]
-save(logp_frame, file = 'logp_dump.Rda')
-save(pka_frame, file = 'pka_dump.Rda')
+save(logp_frame, file = paste0(intermediate_directory, '/logp_dump.Rda'))
+save(pka_frame, file = paste0(intermediate_directory, '/pka_dump.Rda'))
 
 
 
@@ -847,7 +851,7 @@ identifiers$pka = NA
 temp_logp_fix_by_hand = list()
 
 
-if(!file.exists(file = 'identifiers_logkow_pka_dump.Rda') | forced_rerun){
+if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_dump.Rda')) | forced_rerun){
   
   for(i in 1:nrow(identifiers)){  
     
@@ -1158,11 +1162,11 @@ if(!file.exists(file = 'identifiers_logkow_pka_dump.Rda') | forced_rerun){
   # 2,3,4,5-Tetrachlorophenol pKa=6.35 Hazardous Substances Data Bank (HSDB)     6765
   identifiers[identifiers$CID == '21013', "pka"] = '6.35'
   
-  save(identifiers, file = 'identifiers_logkow_pka_dump.Rda')
+  save(identifiers, file = paste0(intermediate_directory, '/identifiers_logkow_pka_dump.Rda'))
   
 } else {
   
-  load(file = 'identifiers_logkow_pka_dump.Rda')
+  load(file = paste0(intermediate_directory, '/identifiers_logkow_pka_dump.Rda'))
   
 }
 
@@ -1172,8 +1176,8 @@ identifiers$logkow = ifelse(identifiers$logkow == 'NA', NA, identifiers$logkow)
 nrow(identifiers[is.na(identifiers$logkow),])
 
 # Save all identifiers, for work on other systems
-save(identifiers, file = paste0('identifiers_', version, '.Rda'))
-load(file = paste0('identifiers_', version, '.Rda'))
+save(identifiers, file = paste0(intermediate_directory, '/identifiers_', version, '.Rda'))
+# load(file = paste0(intermediate_directory, '/identifiers_', version, '.Rda'))
 
 
 ################################################################################
@@ -1181,22 +1185,22 @@ load(file = paste0('identifiers_', version, '.Rda'))
 ################################################################################
 
 # Option to turn off running the QSARS (the output files are already there, and you just want to recompile them)
-run_QSARs = TRUE
+run_QSARs = FALSE
 
 QSAR_processing_function = dget('Functions/QSAR_processing_function.R')
 
 # Run the QSARs using the processing script. More infor in the script.
 QSAR_output = QSAR_processing_function(identifiers = identifiers, 
                                        QSAR_paths = c(vegapath, ecosarpath, testpath),
-                                       working_directory = directory,
+                                       working_directory = QSAR_directory,
                                        run_QSARs = run_QSARs,
                                        format = 'long',
                                        ecosar_fix = T)
 
 # Save the merged dataframe to avoid having to reprocess it
-save(QSAR_output, file = paste0('qsar_data_', version, '.Rda'))
+save(QSAR_output, file = paste0(intermediate_directory, '/qsar_data_', version, '.Rda'))
 
-load(file = paste0('qsar_data_', version, '.Rda'))
+# load(file = paste0(intermediate_directory, '/qsar_data_', version, '.Rda'))
 
 
 
@@ -1205,7 +1209,7 @@ load(file = paste0('qsar_data_', version, '.Rda'))
 ################################################################################
 
 # Load QSAR_output dataframe to avoid extra work
-load(file = paste0('qsar_data_', version, '.Rda'))
+load(file = paste0(intermediate_directory, '/qsar_data_', version, '.Rda'))
 
 QSAR_daphnia_acute = QSAR_subset_reduction_function(QSAR_output, 
                                                     species = 'daphnia', 
@@ -1296,8 +1300,9 @@ QSAR_all = do.call("rbind", list(QSAR_daphnia_acute, QSAR_daphnia_chronic, QSAR_
 # Sometimes some ChV stays, but we fixed that, lets just rename them to NOEC here
 QSAR_all$model_endpoint = ifelse(QSAR_all$model_endpoint == 'NOEC ChV', 'NOEC', QSAR_all$model_endpoint)
 
-save(QSAR_all, file = paste0('QSAR_all_processec_v', version, '.Rda'))
-#load(file = paste0('QSAR_all_processec_v', version, '.Rda'))
+save(QSAR_all, file = paste0(intermediate_directory, '/QSAR_all_processec_v', version, '.Rda'))
+#load(file = paste0(intermediate_directory, '/QSAR_all_processec_v', version, '.Rda'))
+
 
 
 ################################################################################
@@ -1475,10 +1480,10 @@ QSAR_all_wide = QSAR_all_wide %>%
 
 
 # Save the wide format dataframe in tab separated csv
-write.table(QSAR_all_wide, file = paste0('QSAR_all_wide_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_all_wide_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
 
 # Double check save
-# QSAR_all_wide_new = fread(file = paste0('QSAR_all_wide_v', version, '.csv'), sep = '\t')
+# QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_all_wide_v', version, '.csv'), sep = '\t')
 
 
 

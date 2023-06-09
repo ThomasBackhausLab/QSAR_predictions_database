@@ -98,10 +98,21 @@ function(ECOTOX_filepath,
       print('Unknown ECOTOX file or filepath')
     }
     
+    # reporting loss of data due to filtering etc, this is the first report
+    print('Number of data points in ECOTOX raw:')
+    print(nrow(ECOTOX))
+    print('Number of unique CAS in ECOTOX raw:')
+    print(length(unique(ECOTOX$cas_number)))
+    
     # Initial filtering using filter function (to reduce computational load of further steps)
     print('Running ECOTOX_filter_function for the first time')
     ECOTOX_filtered_initial = ECOTOX_filter_function(ECOTOX, filters = filters)
     
+    # reporting loss of data due to filtering etc, this is the second report
+    print('Number of data points in ECOTOX after initial filters:')
+    print(nrow(ECOTOX_filtered_initial))
+    print('Number of unique CAS in ECOTOX after initial filters:')
+    print(length(unique(ECOTOX_filtered_initial$cas_number)))
     
     # Clean up ECOTOX with function
     print('Running ECOTOX_cleanup_function')
@@ -110,8 +121,13 @@ function(ECOTOX_filepath,
                                            settings = c('fix species', 'fix molweights'))
     
     
-    # Extract identifiers from ECOTOX
+    # reporting loss of data due to filtering etc, this is the third report
+    print('Number of data points in ECOTOX after cleanup:')
+    print(nrow(ECOTOX_clean))
+    print('Number of unique CAS in ECOTOX after cleanup:')
+    print(length(unique(ECOTOX_clean$cas_number)))
     
+    # Extract identifiers from ECOTOX
     ECOTOX_unique_cas = unique(ECOTOX_clean$cas_number)
     ECOTOX_unique_cas_fixed = as.cas(ECOTOX_unique_cas)
     ECOTOX_identifiers = data.frame(original_CAS = ECOTOX_unique_cas_fixed)
@@ -143,6 +159,12 @@ function(ECOTOX_filepath,
     # Filter ECOTOX with function again, this time removing some additional
     print('Running ECOTOX_filter_function for the second time')
     ECOTOX_filtered = ECOTOX_filter_function(ECOTOX_clean, filters = list(salts = '\\.'))
+    
+    # reporting loss of data due to filtering etc, this is the fourth report
+    print('Number of data points in ECOTOX after second filter:')
+    print(nrow(ECOTOX_filtered))
+    print('Number of unique CAS in ECOTOX after second filter:')
+    print(length(unique(ECOTOX_filtered$cas_number)))
     
     # Add pesticide class as NA to match with EFSA (Not needed anymore)
     # ECOTOX_filtered$pesticide_class = NA

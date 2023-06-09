@@ -125,6 +125,12 @@ function(EFSA_filepath,
       
     }
     
+    # reporting loss of data due to filtering etc, this is the first report
+    print('Number of data points in EFSA raw:')
+    print(nrow(EFSA))
+    print('Number of unique CAS in EFSA raw:')
+    print(length(unique(EFSA$CASNO)))
+    
     # Run EFSA cleanup function (Replaces NA CAS with CAS manually collected from PubChem 2022)
     # With the setting "fix species" to translate all old species names to new and add species_group
     print('Running EFSA_cleanup_function')
@@ -133,6 +139,13 @@ function(EFSA_filepath,
     
     ## We drop entries that has no CAS after cleanup, since it will introduce issues downstream
     EFSA_clean = EFSA_clean[!is.na(EFSA_clean$CASNO),]
+    
+    # reporting loss of data due to filtering etc, this is the second report
+    print('Number of data points in EFSA after cleanup:')
+    print(nrow(EFSA_clean))
+    print('Number of unique CAS in EFSA after cleanup:')
+    print(length(unique(EFSA_clean$CASNO)))
+    
     
     # Get all unique CAS
     EFSA_unique_cas = data.frame('original_CAS' = unique(EFSA_clean$CASNO))
@@ -174,6 +187,13 @@ function(EFSA_filepath,
     
     # Remove columns with only NAs
     EFSA_filtered = Filter(function(x)!all(is.na(x)), EFSA_filtered)
+    
+    # reporting loss of data due to filtering etc, this is the third report
+    print('Number of data points in EFSA after filter:')
+    print(nrow(EFSA_filtered))
+    print('Number of unique CAS in EFSA after filter:')
+    print(length(unique(EFSA_filtered$CASNO)))
+    
     
     # Save EFSA_filtered, for work on other systems
     print('Saving output')

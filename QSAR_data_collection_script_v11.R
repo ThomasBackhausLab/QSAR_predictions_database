@@ -1473,6 +1473,16 @@ QSAR_all_wide = QSAR_all_wide %>%
   relocate(META_InChIKey, .after = META_original_SMILES) %>%
   relocate(META_QSARn)
 
+# Rearrange "calculated" columns to be last for the specific QSAR platforms (and keeping META columns first)
+meta_coln_id = str_detect(colnames(QSAR_all_wide), pattern = 'META_')
+ecosar_raw_coln_id = str_detect(colnames(QSAR_all_wide), pattern = 'ECOSAR_raw_')
+ecosar_calculated_coln_id = str_detect(colnames(QSAR_all_wide), pattern = 'ECOSAR_calculated_')
+vega_raw_coln_id = str_detect(colnames(QSAR_all_wide), pattern = 'VEGA_raw_')
+vega_calculated_coln_id = str_detect(colnames(QSAR_all_wide), pattern = 'VEGA_calculated_')
+test_raw_coln_id = str_detect(colnames(QSAR_all_wide), pattern = 'TEST_raw_')
+
+QSAR_all_wide = cbind(QSAR_all_wide[,meta_coln_id], QSAR_all_wide[,ecosar_raw_coln_id], QSAR_all_wide[,ecosar_calculated_coln_id], QSAR_all_wide[,vega_raw_coln_id], QSAR_all_wide[,vega_calculated_coln_id], QSAR_all_wide[,test_raw_coln_id])
+
 
 ################################################################################
 #               4.2. Exporting output data                                     #

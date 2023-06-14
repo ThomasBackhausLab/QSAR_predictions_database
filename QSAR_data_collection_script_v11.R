@@ -413,8 +413,6 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
 ### Merge the datasets
 
 # Standardize column names
-# colnames(ECOTOX_filtered)
-colnames(EFSA_filtered)
 
 ECOTOX_filtered = ECOTOX_filtered %>%
   rename(Species_group = species_group) %>%
@@ -432,7 +430,6 @@ EFSA_filtered = EFSA_filtered %>%
   rename(Conc_sign = expValueOp) %>%
   rename(Media_type = medium) %>%
   rename(Species_name = organism)
-
 
 
 # Add empty columns so we can rbind dataframes, for columns not standardizable
@@ -582,11 +579,37 @@ save(identifiers, file = paste0(intermediate_directory, '/identifiers_post_merge
 #load(file = paste0('experimental_dataset_post_merge_v', version, '.Rda'))
 #load(file = paste0('identifiers_post_merge_v', version, '.Rda'))
 
+################################################################################
+#           2.4. Final cleanup of experimental data                            #
+################################################################################
+
+# Move all columns that the datasets have in common to the front, then the EFSA cols, then the ECOTOX cols
+
+common_cols = colnames(experimental_dataset)[colnames(experimental_dataset) %in% colnames(Filter(function(x)!all(is.na(x)), EFSA_filtered)) & colnames(experimental_dataset) %in% colnames(Filter(function(x)!all(is.na(x)), ECOTOX_filtered))]
+
+efsa_cols = colnames(experimental_dataset)[colnames(experimental_dataset) %in% colnames(Filter(function(x)!all(is.na(x)), EFSA_filtered)) & !colnames(experimental_dataset) %in% colnames(Filter(function(x)!all(is.na(x)), ECOTOX_filtered))] 
+
+ecotox_cols = colnames(experimental_dataset)[!colnames(experimental_dataset) %in% colnames(Filter(function(x)!all(is.na(x)), EFSA_filtered)) & colnames(experimental_dataset) %in% colnames(Filter(function(x)!all(is.na(x)), ECOTOX_filtered))]
+
+experimental_dataset = cbind(experimental_dataset[common_cols], experimental_dataset[efsa_cols], experimental_dataset[ecotox_cols])
+
+
+# then we add ECOTOX_ before any columns specifically from ECOTOX, and the same with EFSA
+
+colnames(experimental_dataset) =  ifelse(colnames(experimental_dataset) %in% common_cols,
+                                         colnames(experimental_dataset),
+                                         ifelse(colnames(experimental_dataset) %in% efsa_cols,
+                                                str_replace_all(colnames(experimental_dataset), pattern = '^(?=.)', replacement = 'EFSA_'),
+                                                ifelse(colnames(experimental_dataset) %in% ecotox_cols,
+                                                       str_replace_all(colnames(experimental_dataset), pattern = '^(?=.)', replacement = 'ECOTOX_'),
+                                                       NA)
+                                                )
+                                         )
 
 
 
 ################################################################################
-#           2.4. Add chemical properties                                       #
+#           2.5. Add chemical properties to identifiers frame                  #
 ################################################################################
 
 # Get CID from webchem (to query pubchem through webchem for pKa, logkow etc)
@@ -1490,11 +1513,19 @@ QSAR_all_wide = cbind(QSAR_all_wide[,meta_coln_id], QSAR_all_wide[,ecosar_raw_co
 
 
 # Save the wide format dataframe in tab separated csv
-write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_all_wide_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
 
 # Double check save
-# QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_all_wide_v', version, '.csv'), sep = '\t')
+# QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t')
 
+# Save identifiers and physicochemical information in output folder
+write.table(identifiers, file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+
+# Note that there are some compounds from the original empirical data for which we have no QSAR predictions
+identifiers_missing_predictions = identifiers[!identifiers$original_CAS %in% QSAR_all_wide$META_original_CAS,]
+
+# Save empirical data in output folder
+write.table(experimental_dataset, file = paste0(intermediate_directory, '/experimental_dataset_v', version, '.Rda'), sep = '\t', col.names = T, row.names = F, quote = F)
 
 
 

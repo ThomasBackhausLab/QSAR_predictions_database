@@ -15,6 +15,9 @@
 # And the empirical databases ECOTOX from the US EPA and the EFSA pesticides
 # dataset
 #
+# Git repository:
+# https://github.com/ThomasBackhausLab/QSAR_predictions_database
+#
 ################################################################################
 #                  Table of contents                                           #
 #                                                                              #
@@ -93,6 +96,7 @@
 
 # Split off data collection (and QSAR prediction) from analysis
 # Scenarios, summaries and analysis now part of a different script (and article)
+# Restructured script and cleaned up annotations
 
 
 ################################################################################
@@ -119,7 +123,7 @@
 #
 # ------'ECOTOX-Term-Appendix-C.csv'--------------------------------------------
 #
-# Appendix C from US EPA ECOTOX, containing descriptsions of some terms 
+# Appendix C from US EPA ECOTOX, containing descriptions of some terms 
 # for the ECOTOX database
 #
 #
@@ -134,51 +138,40 @@
 
 ####### Output files:
 #
-# --------'EFSA_filtered_', version, '.Rda'-------------------------------------
+# --------'QSAR_predictions_v[version].csv'-----------------------------------------
 #
-# The EFSA data filtered to fit the usage within this script (endpoints matching
-# the QSAR models, removal of low quality data points etc)
+# The main output of the script. QSAR predictions from the QSAR tools listed above.
+# Wide format, with one row per substance. For more info on contents, see excel
+# sheet with content descriptions in the repository at the start of the script
 #
-# --------'ECOTOX_combined_filtered_', version, '.Rda'--------------------------
+# --------'experimental_dataset_v[version].csv'-----------------------------------------
 #
-# The ECOTOX data filtered to fit the usage within this script (endpoints 
-# matching the QSAR models etc)
-#
-# --------'identifiers_', version, '.Rda'---------------------------------------
-#
-# A list of all identifiers collected from the original data sources
-#
-#
-# --------'qsar_data_', version, '.Rda'-----------------------------------------
-#
-# The output from QSAR_processing saved to allow work from systems without
-# possibility to run the QSAR_processing function (i.e. no QSARs installed)
+# A cleaned and curated dataset with empirical data used in the script. Contains
+# data from US EPA ECOTOX (found here: https://cfpub.epa.gov/ecotox/) 
+# and a pesticide data collection from EFSA (as reported in this article: 
+# Pierobon, E., Neri, M. C., Marroncelli, S., & Croce, V. (2012). 
+# Completion of data entry of pesticide ecotoxicology Tier 1 study endpoints in a XML schema–database. 
+# EFSA Supporting Publications, 9(11), 326E.)
 #
 #
-# --------'/identifiers/CAS.txt'------------------------------------------------
+# --------'identifiers_[version].csv'---------------------------------------
 #
-# The CAS numbers field from the identifiers frame for input into QSAR models
+# A list of all chemical identifiers and some physicochemical data 
+# collected from the original data sources, webchem and PubChem
 #
-#
-# --------'/identifiers/SMILES.txt'---------------------------------------------
-#
-# The SMILES field from the identifiers frame for input into QSAR models
-#
-#
-# --------'/identifiers/CASSMILES.txt'------------------------------------------
-#
-# The SMILES and CAS numbers fields from the identifiers frame for input into 
-# QSAR models
 #
 #
 ################################################################################
 
-####### Dump files:
+####### Intermediate/dump files:
 #
-# Dump files are produced and/or loaded within the script to reduce script
+# Intermediate/dump files are produced and/or loaded within the script to reduce script
 # times when rerunning the script. In general they contain collected data
 # from various APIs which are generally query-capped. They can take anywhere
-# from a few minutes to half a day to reproduce
+# from a few minutes to half a day to reproduce. No further details of them will be
+# noted here, but they should all be located in the "intermediate files" directory
+# of the repository. The repo contains existing dump files, but if you want to
+# run a fresh collection, you are advised to move these to a backup folder first.
 #
 #
 ################################################################################
@@ -208,6 +201,7 @@ packages <- c('MASS',
               'readr',
               'readxl', 
               'stringr',
+              'data.table',
               'webchem')
 
 # Old packages not currently in use, but add them if something doesn't work
@@ -1511,6 +1505,7 @@ QSAR_all_wide = cbind(QSAR_all_wide[,meta_coln_id], QSAR_all_wide[,ecosar_raw_co
 #               4.2. Exporting output data                                     #
 ################################################################################
 
+## QSAR prediction data
 
 # Save the wide format dataframe in tab separated csv
 write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
@@ -1518,135 +1513,26 @@ write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v'
 # Double check save
 # QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t')
 
+
+## Identifiers
+
 # Save identifiers and physicochemical information in output folder
 write.table(identifiers, file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+
+# Double check save
+# identifiers_new = fread(file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t')
 
 # Note that there are some compounds from the original empirical data for which we have no QSAR predictions
 identifiers_missing_predictions = identifiers[!identifiers$original_CAS %in% QSAR_all_wide$META_original_CAS,]
 
+
+## Empirical data
+
 # Save empirical data in output folder
-write.table(experimental_dataset, file = paste0(intermediate_directory, '/experimental_dataset_v', version, '.Rda'), sep = '\t', col.names = T, row.names = F, quote = F)
+write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
 
+# Double check save
+# experimental_dataset_new = fread(file = paste0(output_directory, '/experimental_dataset_v', version, '.csv'), sep = '\t')
 
-
-
-
-
-
-
-
-
-
-
-
-
-################################################################################
-#           2.4. Calculate overlap between empirical sets                      #
-################################################################################
-
-species_vector = c('daphnia',
-                   'fish',
-                   'algae')
-
-substance_overview_frame = data.frame(species = species_vector,
-                                      total_chemicals_unfiltered = NA,
-                                      total_chemicals_filtered = NA,
-                                      EFSA_chemicals_unfiltered = NA,
-                                      EFSA_chemicals_filtered = NA,
-                                      ECOTOX_chemicals_unfiltered = NA,
-                                      ECOTOX_chemicals_filtered = NA,
-                                      overlap_unfiltered = NA,
-                                      overlap_filtered = NA)
-
-# For this part we need the uncurated version of the data
-EFSA = as.data.frame(read_xlsx(EFSA_filepath))
-load(ECOTOX_filepath)
-
-for(i in 1:length(species_vector)){
-  
-  current_species = species_vector[i]
-  
-  if(current_species == 'daphnia'){
-    
-    current_species_vector = daphnia_species
-    
-  } else if(current_species == 'fish'){
-    
-    current_species_vector = oecd_fish_species
-    
-  } else if(current_species == 'algae'){
-    
-    current_species_vector = oecd_algae_species
-    
-  } 
-  
-  current_total_chemicals_unfiltered = length(unique(append(EFSA[EFSA$organism %in% current_species_vector, "CASNO"],
-                                                            ECOTOX[ECOTOX$latin_name %in% current_species_vector, "cas_number"])))
-  
-  current_total_chemicals_filtered = length(unique(append(EFSA_filtered[EFSA_filtered$Species_name %in% current_species_vector, "original_CAS"],
-                                                          ECOTOX_filtered[ECOTOX_filtered$Species_name %in% current_species_vector, "original_CAS"])))
-  
-  current_EFSA_chemicals_unfiltered = length(unique(EFSA[grepl(EFSA$organism, pattern = paste0('(',paste(current_species_vector, collapse = ')|('), ')')), "CASNO"]))
-  
-  current_EFSA_chemicals_filtered = length(unique(EFSA_filtered[EFSA_filtered$Species_name %in% current_species_vector, "original_CAS"]))
-  
-  current_ECOTOX_chemicals_unfiltered = length(unique(ECOTOX[grepl(ECOTOX$latin_name, pattern = paste0('(',paste(current_species_vector, collapse = ')|('), ')')), "cas_number"]))
-  
-  current_ECOTOX_chemicals_filtered = length(unique(ECOTOX_filtered[ECOTOX_filtered$Species_name %in% current_species_vector, "original_CAS"]))
-  
-  
-  
-  current_overlap_unfiltered = length(unique(EFSA[grepl(EFSA$organism, pattern = paste0('(',paste(current_species_vector, collapse = ')|('), ')')) & EFSA$CASNO %in% ECOTOX[ECOTOX$latin_name %in% current_species_vector, "cas_number"], 'CASNO']))
-  
-  current_overlap_filtered = length(unique(EFSA_filtered[EFSA_filtered$Species_name %in% current_species_vector & EFSA_filtered$original_CAS %in% ECOTOX_filtered[ECOTOX_filtered$Species_name %in% current_species_vector, "original_CAS"], 'original_CAS']))
-  
-  
-  substance_overview_frame[substance_overview_frame$species == current_species, "total_chemicals_unfiltered"] = current_total_chemicals_unfiltered
-  substance_overview_frame[substance_overview_frame$species == current_species, "total_chemicals_filtered"] = current_total_chemicals_filtered
-  substance_overview_frame[substance_overview_frame$species == current_species, "EFSA_chemicals_unfiltered"] = current_EFSA_chemicals_unfiltered
-  substance_overview_frame[substance_overview_frame$species == current_species, "EFSA_chemicals_filtered"] = current_EFSA_chemicals_filtered
-  substance_overview_frame[substance_overview_frame$species == current_species, "ECOTOX_chemicals_unfiltered"] = current_ECOTOX_chemicals_unfiltered
-  substance_overview_frame[substance_overview_frame$species == current_species, "ECOTOX_chemicals_filtered"] = current_ECOTOX_chemicals_filtered
-  substance_overview_frame[substance_overview_frame$species == current_species, "overlap_unfiltered"] = current_overlap_unfiltered
-  substance_overview_frame[substance_overview_frame$species == current_species, "overlap_filtered"] = current_overlap_filtered
-  
-}
-
-# Finally add total row
-substance_overview_frame = rbind(substance_overview_frame, c("species" = 'all',
-                                                             "total_chemicals_unfiltered" = length(unique(c(EFSA$CASNO, ECOTOX$cas_number))),
-                                                             "total_chemicals_filtered" = nrow(identifiers), 
-                                                             "EFSA_chemicals_unfiltered" = length(unique(c(EFSA$CASNO))), 
-                                                             "EFSA_chemicals_filtered" = nrow(EFSA_identifiers),
-                                                             "ECOTOX_chemicals_unfiltered" = length(unique(c(ECOTOX$cas_number))), 
-                                                             "ECOTOX_chemicals_filtered" = nrow(ECOTOX_identifiers), 
-                                                             "overlap_unfiltered" = length(unique(EFSA[EFSA$CASNO %in% ECOTOX[, "cas_number"], 'CASNO'])), 
-                                                             "overlap_filtered" = sum(EFSA_identifiers$original_CAS %in% ECOTOX_identifiers$original_CAS)))
-
-# Save the overlap as a CSV-file
-write_delim(substance_overview_frame, file = 'compounds_per_species_table.csv', delim = '\t', col_names = T, quote = 'none')
-
-
-
-
-################################################################################
-#             3.1. Calculate metadata on QSAR predictions                      #
-################################################################################
-
-vega_unique_substances_daphnia_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'VEGA' & grepl(QSAR_output$model_organism, pattern = 'daphni', ignore.case = T) & QSAR_output$duration == '48h', 'original_CAS']))
-vega_unique_substances_daphnia_chronic = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'VEGA' & grepl(QSAR_output$model_organism, pattern = 'daphni', ignore.case = T) & QSAR_output$duration == '21d', 'original_CAS']))
-vega_unique_substances_fish_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'VEGA' & grepl(QSAR_output$model_organism, pattern = 'fish', ignore.case = T) & QSAR_output$duration == '96h', 'original_CAS']))
-vega_unique_substances_fish_chronic = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'VEGA' & grepl(QSAR_output$model_organism, pattern = 'fish', ignore.case = T) & QSAR_output$duration == 'ELS', 'original_CAS']))
-vega_unique_substances_algae_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'VEGA' & grepl(QSAR_output$model_organism, pattern = 'algae', ignore.case = T) & QSAR_output$duration == '72h' & QSAR_output$model_endpoint == 'EC50', 'original_CAS']))
-vega_unique_substances_algae_chronic = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'VEGA' & grepl(QSAR_output$model_organism, pattern = 'algae', ignore.case = T) & QSAR_output$duration == '72h' & QSAR_output$model_endpoint == 'NOEC', 'original_CAS']))
-
-ecosar_unique_substances_daphnia_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'ECOSAR' & grepl(QSAR_output$model_organism, pattern = 'daphni', ignore.case = T) & QSAR_output$duration == '48h', 'original_CAS']))
-ecosar_unique_substances_daphnia_chronic = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'ECOSAR' & grepl(QSAR_output$model_organism, pattern = 'daphni', ignore.case = T) & QSAR_output$model_endpoint == 'ChV', 'original_CAS']))
-ecosar_unique_substances_fish_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'ECOSAR' & grepl(QSAR_output$model_organism, pattern = 'fish', ignore.case = T) & QSAR_output$duration == '96h', 'original_CAS']))
-ecosar_unique_substances_fish_chronic = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'ECOSAR' & grepl(QSAR_output$model_organism, pattern = 'fish', ignore.case = T) & QSAR_output$model_endpoint == 'ChV', 'original_CAS']))
-ecosar_unique_substances_algae_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'ECOSAR' & grepl(QSAR_output$model_organism, pattern = 'algae', ignore.case = T) & QSAR_output$duration == '96h' & QSAR_output$model_endpoint == 'EC50', 'original_CAS']))
-ecosar_unique_substances_algae_chronic = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'ECOSAR' & grepl(QSAR_output$model_organism, pattern = 'algae', ignore.case = T) & QSAR_output$model_endpoint == 'ChV', 'original_CAS']))
-
-test_unique_substances_daphnia_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'T.E.S.T.' & grepl(QSAR_output$model_organism, pattern = 'daphni', ignore.case = T) & QSAR_output$duration == '48h', 'original_CAS']))
-test_unique_substances_fish_acute = length(unique(QSAR_output[QSAR_output$QSAR_tool == 'T.E.S.T.' & grepl(QSAR_output$model_organism, pattern = 'fish', ignore.case = T) & QSAR_output$duration == '96h', 'original_CAS']))
-
+# Remove any double checked files
+rm(list = ls()[grep("new$", ls())])

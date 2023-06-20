@@ -1479,8 +1479,26 @@ colnames(QSAR_all_wide) = str_replace_all(colnames(QSAR_all_wide), pattern = '(?
 colnames(QSAR_all_wide) = str_replace_all(colnames(QSAR_all_wide), pattern = '(?<=VEGA_)(?=[A-Z])', replacement = 'raw_') 
 colnames(QSAR_all_wide) = str_replace_all(colnames(QSAR_all_wide), pattern = '(?<=TEST_)', replacement = 'raw_') 
 
-# Replace all NA with -7777
-QSAR_all_wide[is.na(QSAR_all_wide)] = -7777
+QSAR_all_wide = as.data.frame(QSAR_all_wide)
+
+# Replace all NAs with -7777 or "missing" depending on column class
+for(i in 1:ncol(QSAR_all_wide)){
+  
+  current_column = QSAR_all_wide[,i]
+  
+  if(is.numeric(current_column)){
+    
+    current_column[is.na(current_column)] = -7777
+    
+  } else if(is.character(current_column)){
+    
+    current_column[is.na(current_column)] = 'missing'
+    
+  }
+  
+  QSAR_all_wide[,i] = current_column
+  
+}
 
 # Add internal database identifier for each compound
 QSAR_all_wide$META_QSARn = paste0('QSARn', as.numeric(rownames(QSAR_all_wide)))
@@ -1508,7 +1526,7 @@ QSAR_all_wide = cbind(QSAR_all_wide[,meta_coln_id], QSAR_all_wide[,ecosar_raw_co
 ## QSAR prediction data
 
 # Save the wide format dataframe in tab separated csv
-write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
 # QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t')
@@ -1516,8 +1534,29 @@ write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v'
 
 ## Identifiers
 
+# Replace all NAs with -7777 or "missing" depending on column class
+identifiers = as.data.frame(identifiers)
+
+for(i in 1:ncol(identifiers)){
+  
+  current_column = identifiers[,i]
+  
+  if(is.numeric(current_column)){
+    
+    current_column[is.na(current_column)] = -7777
+    
+  } else if(is.character(current_column)){
+    
+    current_column[is.na(current_column)] = 'missing'
+    
+  }
+  
+  identifiers[,i] = current_column
+  
+}
+
 # Save identifiers and physicochemical information in output folder
-write.table(identifiers, file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+write.table(identifiers, file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
 # identifiers_new = fread(file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t')
@@ -1528,8 +1567,29 @@ identifiers_missing_predictions = identifiers[!identifiers$original_CAS %in% QSA
 
 ## Empirical data
 
+# Replace all NAs with -7777 or "missing" depending on column class
+experimental_dataset = as.data.frame(experimental_dataset)
+
+for(i in 1:ncol(experimental_dataset)){
+  
+  current_column = experimental_dataset[,i]
+  
+  if(is.numeric(current_column)){
+    
+    current_column[is.na(current_column)] = -7777
+    
+  } else if(is.character(current_column)){
+    
+    current_column[is.na(current_column)] = 'missing'
+    
+  }
+  
+  experimental_dataset[,i] = current_column
+  
+}
+
 # Save empirical data in output folder
-write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F)
+write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
 # experimental_dataset_new = fread(file = paste0(output_directory, '/experimental_dataset_v', version, '.csv'), sep = '\t')

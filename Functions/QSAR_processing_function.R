@@ -87,25 +87,28 @@ function(identifiers,
   # 2. Packages and housekeeping
   ################################################################################
   
+  # The package handling within functions is from an older version of the script
+  # It has been kept for debugging purposes and if any error occurs
+  
   #### Prepare loading packages if this is the first time ####
   #library(BiocManager)
   #BiocManager::install(c('ChemmineOB', 'ChemmineR'))
-  
+  #
   #### Load packages ####
-  packages <- c('readxl', 'dplyr', 'data.table', 'readr', 'stringr', 'webchem', "ChemmineR", "ChemmineOB", 'tidyr', 'data.table', 'rcdk')
-  
-  tryCatch(
-    expr = {lapply(packages, library, character.only = TRUE)
-      },
-    error = function(e){
-      message('Error loading packages, make sure all the following packages are loaded:')
-      print(packages)
-    },
-    warning = function(w){
-      message('Warnings issued while loading packages. Continuing function.')
-    }
-  )
-  
+  # packages <- c('readxl', 'dplyr', 'data.table', 'readr', 'stringr', 'webchem', "ChemmineR", "ChemmineOB", 'tidyr', 'data.table', 'rcdk')
+  # 
+  # tryCatch(
+  #   expr = {lapply(packages, library, character.only = TRUE)
+  #     },
+  #   error = function(e){
+  #     message('Error loading packages, make sure all the following packages are loaded:')
+  #     print(packages)
+  #   },
+  #   warning = function(w){
+  #     message('Warnings issued while loading packages. Continuing function.')
+  #   }
+  # )
+  # 
   ## Set function version
   version = 2
   
@@ -269,38 +272,54 @@ function(identifiers,
       
       shell.exec(vegapath)
       
+      temp = readline(prompt = 'Do you need instructions on VEGA handling? (yes/no):')
+      
+      if(temp == 'yes'){
+        
+        cat(
+          'Vega will open in a separate window. Click "import file" on the right of that window.
+          Navigate to your SMILES-file as exported above (should be in', paste0(working_directory, '/identifiers/'), ') and click open
+          On the left of the Vega-window click "select" to select which models should be applied
+          Open the "Ecotox"-tab (at the top, second from the left) and select the following models:
+
+          "Fish Acute (LC50) Toxicity model (KNN/Read-Across) (version 1.0.0)"
+          "Fish Acute (LC50) Toxicity model (NIC) (version 1.0.0)"
+          "Fish Acute (LC50) Toxicity model (IRFMN) (version 1.0.0)"
+          "Fish Acute (LC50) Toxicity model (IRFMN/Combase) (version 1.0.0)"
+          "Fish Chronic (NOEC) Toxicity model (IRFMN) (version 1.0.0)"
+          "Fathead Minnow LC50 96h (EPA) (version 1.0.7)"
+          "Fathead Minnow LC50 model (KNN/IRFMN) (version 1.1.0)"
+          "Guppy LC50 model (KNN/IRFMN) (version 1.1.0)"
+          "Daphnia Magna LC50 48h (EPA) (version 1.0.7)"
+          "Daphnia Magna LC50 48h (DEMETRA) (version 1.0.4)"
+          "Daphnia Magna Acute (EC50) Toxicity model (IRFMN) (version 1.0.0)"
+          "Daphnia Magna Acute (EC50) Toxicity model (IRFMN/Combase) (version 1.0.0)"
+          "Daphnia Magna Chronic (NOEC) Toxicity model (IRFMN) (version 1.0.0)"
+          "Algae Acute (EC50) Toxicity model (IRFMN) (version 1.0.0)"
+          "Algae Acute (EC50) Toxicity model (ProtoQSAR/Combase) (version 1.0.0)"
+          "Algae Chronic (NOEC) Toxicity model (IRFMN) (version 1.0.0)"
+          "Sludge (EC50) Toxicity model (ProtoQSAR/Combase) (version 1.0.0)"
+
+          Click the "EXPORT"-button on the left and click to checkmark "summary (plain text file)" on the right of that tab.
+          Enter, or use the button on the right of the textbox to navigate to, your vega-output folder
+          Click predict and wait for results')
+        
+        readline("Have you read and understood the instructions? (press ENTER to continue)")
+        
+      } else if(temp == 'no'){
+        
+        print('No instructions needed. Continuing function')
+        
+      } else {
+        
+        print('Answer not recognized, interpreting as "no". Continuing function')
+        
+      }
+      
       print(paste0('Set the report folder to the following: ', vegawd))
       
       question1 <- readline("Has VEGA finished its process? (press ENTER to continue)")
     }
-    
-    # Vega will open in a separate window. Click "import file" on the right of that window.
-    # Navigate to your SMILES-file as exported above and click open
-    # On the left of the Vega-window click "select" to select which models should be applied
-    # For this script we will uncheck all boxes under the "Tox"-tab, and instead open the "Ecotox"-tab
-    # Under the "Ecotox"-tab, select models:
-    #
-    # "Fish Acute (LC50) Toxicity model (KNN/Read-Across) (version 1.0.0)"
-    # "Fish Acute (LC50) Toxicity model (NIC) (version 1.0.0)"
-    # "Fish Acute (LC50) Toxicity model (IRFMN) (version 1.0.0)"
-    # "Fish Acute (LC50) Toxicity model (IRFMN/Combase) (version 1.0.0)"
-    # "Fish Chronic (NOEC) Toxicity model (IRFMN) (version 1.0.0)"
-    # "Fathead Minnow LC50 96h (EPA) (version 1.0.7)"
-    # "Fathead Minnow LC50 model (KNN/IRFMN) (version 1.1.0)"
-    # "Guppy LC50 model (KNN/IRFMN) (version 1.1.0)"
-    # "Daphnia Magna LC50 48h (EPA) (version 1.0.7)"
-    # "Daphnia Magna LC50 48h (DEMETRA) (version 1.0.4)"
-    # "Daphnia Magna Acute (EC50) Toxicity model (IRFMN) (version 1.0.0)"
-    # "Daphnia Magna Acute (EC50) Toxicity model (IRFMN/Combase) (version 1.0.0)"
-    # "Daphnia Magna Chronic (NOEC) Toxicity model (IRFMN) (version 1.0.0)"
-    # "Algae Acute (EC50) Toxicity model (IRFMN) (version 1.0.0)"
-    # "Algae Acute (EC50) Toxicity model (ProtoQSAR/Combase) (version 1.0.0)"
-    # "Algae Chronic (NOEC) Toxicity model (IRFMN) (version 1.0.0)"
-    # "Sludge (EC50) Toxicity model (ProtoQSAR/Combase) (version 1.0.0)"
-    #
-    # Click the "EXPORT"-button on the left and click to checkmark "summary (plain text file)" on the right of that tab.
-    # Enter, or use the button on the right of the textbox to navigate to, your vega-output folder
-    # Click predict and wait for results
     
     
     ## Run ECOSAR
@@ -309,27 +328,48 @@ function(identifiers,
       
       shell.exec(ecosarpath)
       
+      temp = readline(prompt = 'Do you need instructions on ECOSAR handling? (yes/no):')
+      
+      if(temp == 'yes'){
+        
+        cat(
+        'Ecosar will open in a separate window. The first page will show an EULA-type agreement.
+        Read the short agreement and click accept (if you do accept the agreement, otherwise this script may not be applied properly). 
+        You will end up in the tab "Organic Molecule".
+        Click the "Batch" button on the right side of the ECOSAR window. Click "Load" on the right side.
+        A file browser will open. Navigate to your identifiers-file (should be in', paste0(working_directory, '/identifiers/'), 
+        'ECOSAR accepts both SMILES and CAS, but here we use SMILES.
+        Note that if you are running this script for more than 1000 compoinds, you will have SMILES-files with names like SMILES_1to1000 and so on until SMILES_X001toEnd.
+        ECOSAR is very slow with large datasets, and speed is improved by running smaller batches - you will need to run this for each of the files.
+        Select the file you want to use, and click "open".
+        ECOSAR may take some time to identify the substances entered. Usually in the range of 1-10 minutes. 
+        You will now see the CAS, name and SMILES of all identified substances (Unidentified will lack name and/or SMILES or CAS depending on which identifier you supplied)
+        
+        The following step is important:
+          click "Report" and navigate to your ECOSAR-output folder, name your output file and click save.
+          When naming, use "ecosar_output" if you have less than 1000 substances, else put ecosar_output1 for the first file, and 2 for the second etc.
+        !!!DO NOT click "submit" as this will run all substances individually in the ecosar window and present results visually instead of an output file.!!!
+        
+        Wait for results. This can take hours even with splitting up the compounds.')
+        
+        readline("Have you read and understood the instructions? (press ENTER to continue)")
+        
+      } else if(temp == 'no'){
+        
+        print('No instructions needed. Continuing function')
+        
+      } else {
+        
+        print('Answer not recognized, interpreting as "no". Continuing function')
+        
+      }
+      
       print(paste0('Set the report folder to the following: ', ecosarwd))
-      print(paste0('Input the following filename: ', ecosarfile))
+      print(paste0('Input the following filename: ', ecosarfile, ', or if multiple split SMILES-lists add a 1, 2 or 3 etc before the file-extension depending on which SMILES-file you used'))
       
       question2 <- readline("Has ECOSAR finished its process? (press ENTER to continue)")
       
     }
-    
-    # Ecosar will open in a separate window. The first page will show an EULA-type agreement.
-    # Read the short agreement and click accept (if you do accept the agreement, 
-    # otherwise this script may not be applied properly). You will end up in the tab "Organic Molecule".
-    # Click the "Batch" button on the right side of the ECOSAR window. Click "Load" on the right side.
-    # A file browser will open. Navigate to your identifiers-file (ECOSAR accepts SMILES and CAS).
-    # ECOSAR may take a moment to identify the substances entered. You will now see the CAS, name and SMILES
-    # of all identified substances (Unidentified will lack name and/or SMILES or CAS depending on which identifier you supplied)
-    # 
-    # The following step is important: 
-    # click "Report" and navigate to your ECOSAR-output folder, name your ouput file and click save.
-    # DO NOT click "submit" as this will run all substances individually in the ecosar window and present results visually instead of an output file.
-    #
-    # Wait for results.
-    
     
     ## Run T.E.S.T.
     if(run_test){
@@ -337,25 +377,46 @@ function(identifiers,
       
       shell.exec(testpath)
       
+      temp = readline(prompt = 'Do you need instructions on T.E.S.T. handling? (yes/no):')
+      
+      if(tolower(temp) == 'yes'){
+        
+        cat(
+          'T.E.S.T. will open in a separate window.
+          From the first page, find the turquoise "Switch to Batch Mode"-button on the bottom right and click it.
+          In Batch Mode, there will be an empty text-box in the upper left part of the window. 
+          Manually copy and paste the identifiers (use SMILES here) from your identifiers-file (you should find your file in ', 
+          paste0(working_directory, '/identifiers/'),') 
+          Make sure that the drop down menu to the top left says "Smiles" and not automatic.
+          Click "Search" to load in the identifiers into the table on the right. 
+          In this table you can see if any compounds are unidentified or exhibits any other error.
+          On the left you can chose endpoint and method. 
+          For this script we will run fathead minnow LC50 and Daphnia magna LC50, but these will each be run separately. 
+          For now, pick the Daphnia magna endpoint. 
+          For method, use the default "Concensus"-method.
+          Further down is a field for output-folder; click "Browse..." and navigate to your test-ouptut-folder.
+          Click the green "Calculate!"-button on the bottom right to start calculations for your selected model (a results-window opens)
+          In the results window wait for the predictions to finish, then click "save to text (.csv)", which will open a file browser (which should already be in your chosen output folder)
+          Click "save". Here the file may be opened automatically by your default CSV-reader (e.g. Excell), just close it.
+          Close the results window and switch "Endpoint" (if you follow this guide, it will be Fathead minnow LC50 now) and
+          click the green "Calculate!"-button once again. And once more save the results by clicking "save to text (.csv)".
+          
+          The results are now in and ready to be imported!')
+          
+        readline("Have you read and understood the instructions? (press ENTER to continue)")
+        
+      } else if(tolower(temp) == 'no'){
+        
+        print('No instructions needed. Continuing function')
+        
+      } else {
+        
+        print('Answer not recognized, interpreting as "no". Continuing function')
+        
+      }
+      
       question3 <- readline("Has T.E.S.T. finished its process? (press ENTER to continue)")
     }
-    
-    # T.E.S.T. will open in a separate window.
-    # From the first page, find the turquoise "Switch to Batch Mode"-button on the bottom right and click it.
-    # In Batch Mode, there will be an empty text-box in the upper left part of the window. Manually copy and paste the identifiers from
-    # your identifiers-file (TEST accepts CAS, SMILES or most chemical names). Click "Search" to laod in the identifiers into the
-    # table on the right. In this table you can see if any compounds are unidentified or exhibits any other error.
-    # On the left you can chose endpoint and method. For this script we will run fathead minnow LC50 and Daphnia magna LC50,
-    # but these will each be run separately. For now, pick the Daphnia magna endpoint. For method, use the default "Concensus"-method.
-    # Further down is a field for output-folder; click "Browse..." and navigate to your test-ouptut-folder.
-    # Click the green "Calculate!"-button on the bottom right to start calculations for your selected model (a results-window opens)
-    # In the results window, click "save to text (.csv)", which will open a file browser (which should already be in your chosen output folder)
-    # Click "save". Here the file may be opened by your default CSV-reader (e.g. Excell), just close it. 
-    # Close the results window and switch "Endpoint" (if you follow this guide, it will be Fathead minnow LC50) and 
-    # click the green "Calculate!"-button once again. And once more save the results by clicking "save to text (.csv)".
-    #
-    # The results are now in and ready to be imported!
-    
     
   }
   

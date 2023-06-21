@@ -113,12 +113,15 @@
 #
 # ------'Full table.xlsx'------------------
 # 
-# The EFSA pesticides database
+# The EFSA pesticides database as described in
+# Pierobon, E., Neri, M. C., Marroncelli, S., & Croce, V. (2012). 
+# Completion of data entry of pesticide ecotoxicology Tier 1 study endpoints in a XML schema–database. 
+# EFSA Supporting Publications, 9(11), 326E.
 #
 #
-# ------'ECOTOX Summary_v11_Rev12_09_15_2022.csv'-------------------------------
-#
-# The US EPA ECOTOX database
+# ------'ECOTOX 09_15_2022 v8.Rda'-------
+# 
+# The US EPA ECOTOX database as preprocessed by Francis Spilsbury
 #
 #
 # ------'ECOTOX-Term-Appendix-C.csv'--------------------------------------------
@@ -129,7 +132,7 @@
 #
 # ------------------------------------------------------------------------------
 #
-# QSAR outputs are handled within the QSAR_processing_function and will not be
+# QSAR outputs (which serve as input to this script) are handled within the QSAR_processing_function and will not be
 # specified here
 #
 #
@@ -160,7 +163,6 @@
 # collected from the original data sources, webchem and PubChem
 #
 #
-#
 ################################################################################
 
 ####### Intermediate/dump files:
@@ -181,8 +183,8 @@
 #         1. Packages, working directories and housekeeping                    #
 ################################################################################
 
-# A small piece of code to stop "run all" to function here (mainly because sometimes I misclick)
-stop('Please do not "run all" in this script - run section by section')
+# A small piece of code to stop "run all" to function here
+stop('Please do not "run all" in this script - run section by section, since the QSAR arts need manual intervention')
 
 ### Clear environment, memory and console
 rm(list = ls(all.names = TRUE)) #will clear all objects includes hidden objects.
@@ -195,8 +197,7 @@ gc() #free up memrory and report the memory usage.
 #BiocManager::install(c('ChemmineOB', 'ChemmineR'))
 
 #### Load packages ####
-packages <- c('MASS',
-              'dplyr',
+packages <- c('dplyr',
               'tidyr',
               'readr',
               'readxl', 
@@ -204,7 +205,9 @@ packages <- c('MASS',
               'data.table',
               'webchem')
 
-# Old packages not currently in use, but add them if something doesn't work
+lapply(packages, require, character.only = TRUE)
+
+# Old packages not currently in use, but add them if something was missed
 # 'data.table',
 # "ChemmineR",
 # "ChemmineOB",
@@ -216,12 +219,12 @@ packages <- c('MASS',
 # 'grid',
 # 'hms',
 # 'R.utils'
+# 'MASS'
 
-lapply(packages, require, character.only = TRUE)
-
-#Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jdk1.7.0_51\\jre') # Needed to get Java running for rcdk
-library(rcdk)
-library(rJava)
+# # Specific package handling for JAVA
+# Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jdk1.7.0_51\\jre') # Needed to get Java running for rcdk
+# library(rJava)
+# library(rcdk)
 
 #######################
 

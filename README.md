@@ -9,6 +9,8 @@ Specific functions are called for import of empirical data, cleaning and filteri
 
 A handful of intermediate files are created by the script to reduce the load on third party APIs and to avoid rerunning time consuming steps of the script, unless instructed to. These files can be found under the “Intermediate files” folder.
 
+The script was written (and is functional) in R version 4.1.3 using the RStudio editor version 2022.12.0 Build 353
+
 The main script and all helper functions rely on the following R-packages:
 
 data.table      1.14.2

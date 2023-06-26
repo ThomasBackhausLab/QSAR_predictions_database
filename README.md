@@ -11,13 +11,18 @@ A handful of intermediate files are created by the script to reduce the load on 
 
 The main script and all helper functions rely on the following R-packages:
 
-Package name    Version
 data.table      1.14.2
+
 stringr         1.4.0
+
 dplyr           1.0.8
+
 tidyr           1.2.0
+
 readr           2.1.2
+
 webchem         1.1.3
+
 readxl          1.4.0
 
 

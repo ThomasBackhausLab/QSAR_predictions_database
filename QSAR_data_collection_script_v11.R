@@ -490,6 +490,18 @@ identifiers$molecule_number = seq(1, nrow(identifiers), 1)
 
 
 ## Save the identifiers (CAS and SMILES) into the QSAR directory
+
+# Make QSAR folder if it doesnt exist
+if(!file.exists(QSAR_directory)){
+  dir.create(QSAR_directory)
+}
+
+# Make identifiers folder if it doesnt exist
+identifierwd <- paste0(QSAR_directory, '/identifiers')
+if(!file.exists(identifierwd)){
+  dir.create(identifierwd)
+}
+
 # CAS
 write.table(identifiers[,"original_CAS"],
             file = paste0(QSAR_directory, '/identifiers/CAS.txt'),

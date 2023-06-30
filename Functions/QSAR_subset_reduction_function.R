@@ -230,15 +230,21 @@ function(QSAR_output,
     
   } else if(grepl(x = endpoint, pattern = '[Cc]hronic')){
     
-    current_endpoint_filter = paste0(current_endpoint_filter, '|(NOEC)|(ChV)')
+    current_endpoint_filter = paste0(current_endpoint_filter, '|(NOEC)')
     
   } else if(grepl(x = endpoint, pattern = '([Aa]ll)|([Bb]oth)')){
     
-    current_endpoint_filter = paste0(current_endpoint_filter, '|(EC50)|(NOEC)|(ChV)')
+    current_endpoint_filter = paste0(current_endpoint_filter, '|(EC50)|(NOEC)')
   
   }
   
   current_species = species
+  
+  # Special salt water/marine considerations
+  salt_water = F
+  if(grepl(species, pattern = '(SW)|([Mm]arine)')){
+    salt_water = T
+  }
   
   current_duration_filter = '(FAILSAFE)'
   
@@ -256,6 +262,10 @@ function(QSAR_output,
     } else if(grepl(x = current_species, pattern = '[Aa]lgae')){
       
       current_duration_filter = paste0(current_duration_filter, '|(72h)|(96h)')
+      
+    } else if(grepl(x = current_species, pattern = '[Mm]ysid')){
+      
+      current_duration_filter = paste0(current_duration_filter, '|(96h)')
       
     }
     
@@ -282,6 +292,15 @@ function(QSAR_output,
   
   if(in_format == 'wide'){
     
+    # This isnt updated, so we drop it...
+    
+    print('Wide format input not supported in current version, exiting function')
+    
+    return(FALSE)
+    
+    
+    ## This is not run
+    
     current_subset = QSAR_output[,(grepl(colnames(QSAR_output),pattern = paste0(tolower(substr(current_species, 1, 4)), '|', str_to_sentence(substr(current_species, 1, 4)))) & 
                                      grepl(colnames(QSAR_output), pattern = current_duration_filter) &
                                      grepl(colnames(QSAR_output), pattern = paste0(current_endpoint_filter,'|(ECOSAR)|(TEST)') )) | 
@@ -300,6 +319,7 @@ function(QSAR_output,
     if(grepl(current_endpoint_filter, pattern = 'NOEC')){
       
       current_subset = QSAR_output[grepl(tolower(QSAR_output$model_organism), pattern = tolower(substr(current_species, 1, 4))) &
+                                     if(salt_water) grepl(tolower(QSAR_output$model_organism), pattern = tolower('SW')) else !grepl(tolower(QSAR_output$model_organism), pattern = tolower('SW')) &
                                      grepl(QSAR_output$model_endpoint, pattern = current_endpoint_filter) &
                                      (grepl(QSAR_output$duration, pattern = current_duration_filter)|
                                         is.na(QSAR_output$duration)),]
@@ -307,6 +327,7 @@ function(QSAR_output,
     } else {
     
       current_subset = QSAR_output[grepl(tolower(QSAR_output$model_organism), pattern = tolower(substr(current_species, 1, 4))) &
+                                     if(salt_water) grepl(tolower(QSAR_output$model_organism), pattern = tolower('SW')) else !grepl(tolower(QSAR_output$model_organism), pattern = tolower('SW')) &
                                      grepl(QSAR_output$model_endpoint, pattern = current_endpoint_filter) &
                                      grepl(QSAR_output$duration, pattern = current_duration_filter),]
       
@@ -348,310 +369,310 @@ function(QSAR_output,
   # Make sure we have data left, otherwise return NULL
   if(nrow(current_subset) == 0){
     message('Every data point filtered out! Tweak filters or check input file. Exiting function.')
-    retuen(NULL)
+    return(NULL)
   }
   
   ################################################################################
   # 3. Wide in_format processing
   ################################################################################
-  
-  if(in_format == 'wide'){
-    
-    print('Wide format processing')
-    
-    ################################################################################
-    # 3.1. VEGA processing
-    ################################################################################
-    
-    print('Processing vega first method')
-    
-    subset_filter = '(FAILSAFE)'
-    
-    # Invert the filters (translate from "what to keep" to "what to remove")
-    if('all' %in% vega_method){
-      inverted_filter = c()
-    } else {
-      filter_inverter_vector = c('experimental', 'low', 'moderate', 'good')
-      inverted_filter = filter_inverter_vector[!filter_inverter_vector %in% tolower(vega_method)]
-    }
-    
-    # Produce a filter string regexp
-    if('experimental' %in% inverted_filter){
-      subset_filter = paste(subset_filter, '(EXPERIMENTAL)', sep = '|') 
-    }
-    if('low' %in% inverted_filter){
-      subset_filter = paste(subset_filter, '(low)', sep = '|') 
-    }
-    if('moderate' %in% inverted_filter){
-      subset_filter = paste(subset_filter, '(moderate)', sep = '|') 
-    }
-    if('good' %in% inverted_filter){
-      subset_filter = paste(subset_filter, '(good)', sep = '|')
-    }
-    
-    # Get logical with TRUE for experimental or low quality
-    temp_replacement_matrix = mapply(current_subset, FUN = function(x){grepl(x = x, pattern = subset_filter) & !is.na(x)})
-    
-    # Remove colnames otherwise it's weird
-    colnames(temp_replacement_matrix) = NULL
-    
-    # remove first column and add last (shift the logicals one step)
-    temp_replacement_matrix = temp_replacement_matrix[,-1]
-    temp_replacement_matrix = cbind(temp_replacement_matrix, matrix(data = FALSE, nrow = nrow(temp_replacement_matrix)))
-    
-    # Replace true positions with NA
-    current_subset[temp_replacement_matrix] = NA
-    
-    # Save all columns with reliability and drop them (keeping only predicted values)
-    current_vega_reliabilities = current_subset[,grepl(colnames(current_subset),pattern = 'reliability') | colnames(current_subset) %in% c("original_CAS", 
-                                                                                                                                           "original_SMILES",
-                                                                                                                                           "InChIKey",
-                                                                                                                                           "ecosar_CAS",
-                                                                                                                                           "test_CAS", 
-                                                                                                                                           "ecosar_SMILES",
-                                                                                                                                           "vega_SMILES",
-                                                                                                                                           "test_SMILES" )]
-    current_subset = current_subset[,!grepl(colnames(current_subset),pattern = 'reliability')]
-    
-    # Make all predictions numeric
-    current_subset[,9:ncol(current_subset)] = sapply(current_subset[,9:ncol(current_subset)], as.numeric)
-    
-    
-    # define number of vega predictions used for mean
-    current_subset$VEGA_number_of_quality_predictions = rowSums(!is.na(current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA')]))
-    
-    current_subset = current_subset %>% relocate(VEGA_number_of_quality_predictions, .after = InChIKey)
-    
-    colnames(current_subset)[colnames(current_subset) == 'VEGA_number_of_quality_predictions'] = paste0('VEGA_number_of_quality_predictions_', current_species, '_', current_duration)
-    
-    #If geo_mean chosen as method
-    if('geo_mean' %in% vega_method){
-      current_subset$`VEGA_mean_prediction [mg/l]` = apply(
-        current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA_[^Nn]')], 
-        FUN = function(x){
-          geom_mean = exp(
-            sum(
-              log(
-                x[x > 0 & !is.na(x)]
-              ), 
-              na.rm = T
-            ) / length(x[x > 0 & !is.na(x)])
-          )
-          if(all(is.na(x) | x == 0)){
-            return(NA)
-          } else {
-            return(geom_mean)
-          }
-          
-        }, 
-        MARGIN = 1)
-      
-      current_subset = current_subset %>% relocate(`VEGA_mean_prediction [mg/l]`, .after = InChIKey)
-      
-      colnames(current_subset)[colnames(current_subset) == 'VEGA_mean_prediction [mg/l]'] = paste0('VEGA_mean_prediction_', current_species, '_', current_duration, ' [mg/l]')
-      
-    } else if('mean' %in% vega_method){
-      
-      current_subset$`VEGA_mean_prediction [mg/l]` = apply(
-        current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA_[^Nn]')], 
-        FUN = function(x){
-          mean_calc = mean(x[x > 0 & !is.na(x)])
-          if(all(is.na(x) | is.infinite(x) | x == 0)){
-            return(NA)
-          } else {
-            return(mean_calc)
-          }
-        }, 
-        MARGIN = 1)
-      
-      current_subset = current_subset %>% relocate(`VEGA_mean_prediction [mg/l]`, .after = InChIKey)
-      
-      colnames(current_subset)[colnames(current_subset) == 'VEGA_mean_prediction [mg/l]'] = paste0('VEGA_mean_prediction_', current_species, '_', current_duration, ' [mg/l]')
-      
-    } else if('lowest' %in% vega_method){
-      
-      current_subset$`VEGA_lowest_prediction [mg/l]` = apply(
-        current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA_[^Nn]')], 
-        FUN = function(x){
-          min_pred = suppressWarnings(min(x[x > 0 & !is.na(x)]))
-          if(all(is.na(x) | x == 0)){
-            return(NA)
-          } else {
-            return(min_pred)
-          }
-        }, 
-        MARGIN = 1)
-      
-      current_subset = current_subset %>% relocate(`VEGA_lowest_prediction [mg/l]`, .after = InChIKey)
-      
-      colnames(current_subset)[colnames(current_subset) == 'VEGA_lowest_prediction [mg/l]'] = paste0('VEGA_lowest_prediction_', current_species, '_', current_duration, ' [mg/l]')
-      
-    }
-    
-    if(data_filter == 'calculated'){
-      
-      current_subset = current_subset[,!grepl(x = colnames(current_subset), pattern = 'VEGA_[^nml]')]
-      
-    }
-    
-    ################################################################################
-    # 3.2. ECOSAR processing
-    ################################################################################
-    
-    print('processing ecosar first setting')
-    
-    # define number of ECOSAR predictions
-    current_subset$ECOSAR_number_of_prediction_classes = rowSums(!is.na(current_subset[,grepl(x = colnames(current_subset), pattern = 'ECOSAR')]))
-    
-    current_subset = current_subset %>% relocate(ECOSAR_number_of_prediction_classes, .after = InChIKey)
-    
-    colnames(current_subset)[colnames(current_subset) == 'ECOSAR_number_of_prediction_classes'] = paste0('ECOSAR_number_of_prediction_classes_', current_species, '_', current_duration)
-    
-    
-    # ECOSAR states in their user manual that "Traditionally, in the absence of adequate measured data, the most conservative effect level is
-    # used when predictions are identified from multiple classes", so pick out the most conservative (lowest) value if there are multiple prediction classes
-    
-    
-    if('low' %in% ecosar_method){
-      
-      current_subset$`ECOSAR_low [mg/l]` = apply(
-        current_subset, 
-        MARGIN = 1, 
-        FUN = function(x){
-          
-          temp = x[grepl(x = colnames(current_subset), pattern = 'ECOSAR_[^n]')]
-          
-          temp2 = suppressWarnings(min(as.numeric(temp), na.rm = T))
-          
-          if(!is.infinite(temp2)){
-            return(temp2)
-          } else {
-            return(NA)
-          }
-          
-        }
-      )
-      
-      current_subset = current_subset %>% relocate(`ECOSAR_low [mg/l]`, .after = InChIKey)
-      
-      colnames(current_subset)[colnames(current_subset) == 'ECOSAR_low [mg/l]'] = paste0('ECOSAR_low_', current_species, '_', current_duration, ' [mg/l]')
-      
-    } else if('mean' %in% ecosar_method){
-      
-      print('mean not currently supported for ECOSAR, rerun with "low" ')
-      
-    }
-    
-    
-    if(data_filter == 'calculated'){
-      
-      current_subset = current_subset[,!grepl(x = colnames(current_subset), pattern = 'ECOSAR_[^nml]')]
-      
-    }
-    
-    if(ecosar_dual_run){
-      
-      print('processing ecosar second setting')
-      
-      print('Short format needs some work, you doofus!')
-      
-      
-    }
-    
-    ################################################################################
-    # 3.3 Fixing some TEST naming issues
-    ################################################################################
-    
-    colnames(current_subset)[grepl(colnames(current_subset), pattern = 'TEST')] = str_replace(colnames(current_subset)[grepl(colnames(current_subset), pattern = 'TEST')], pattern = 'Fish', replacement = 'fish')
-    
-    
-    ################################################################################
-    # 3.4 Return data.frame
-    ################################################################################
-    
-    print('Finalizing output')
-    
-    if(out_format == 'wide'){
-      
-      return(current_subset)
-      
-    } else if(out_format == 'long') {
-      
-      current_value_columns = 
-        colnames(current_subset)[!colnames(current_subset) %in% c("original_CAS", 
-                                                                  "original_SMILES",
-                                                                  "InChIKey",
-                                                                  "ecosar_CAS",
-                                                                  "test_CAS", 
-                                                                  "ecosar_SMILES",
-                                                                  "vega_SMILES",
-                                                                  "test_SMILES" ) &
-                                   !grepl(colnames(current_subset), pattern = 'number_of')]
-      
-      
-      
-      current_subset_long = gather(current_subset,
-                                   key = model_name,
-                                   value = value,
-                                   all_of(current_value_columns),
-                                   factor_key = T,
-                                   na.rm = F)
-      
-      # Add information about vega predictions
-      
-      current_vega_reliability_columns = 
-        colnames(current_vega_reliabilities)[!colnames(current_vega_reliabilities) %in% c("original_CAS", 
-                                                                                          "original_SMILES",
-                                                                                          "InChIKey",
-                                                                                          "ecosar_CAS",
-                                                                                          "test_CAS", 
-                                                                                          "ecosar_SMILES",
-                                                                                          "vega_SMILES",
-                                                                                          "test_SMILES" ) &
-                                             grepl(colnames(current_vega_reliabilities), pattern = 'reliability')]
-      
-      
-      current_vega_reliabilities_long = gather(current_vega_reliabilities,
-                                             key = model_name,
-                                             value = reliability,
-                                             all_of(current_vega_reliability_columns),
-                                             factor_key = T,
-                                             na.rm = F)
-      
-      # Prepare merging of reliability values by renaming model_name in both sets
-      current_vega_reliabilities_long$model_name = str_replace(current_vega_reliabilities_long$model_name, 
-                                                               pattern = '(?<=assessment).+$',
-                                                               replacement = '')
-      current_subset_long$model_name = str_replace(current_subset_long$model_name, 
-                                                   pattern = '(?<=assessment).+$',
-                                                   replacement = '')
-      
-      
-      current_subset_long = merge(current_subset_long, current_vega_reliabilities_long, all.x = T, by = c("original_CAS", 
-                                                                                           "original_SMILES",
-                                                                                           "InChIKey",
-                                                                                           "ecosar_CAS",
-                                                                                           "test_CAS", 
-                                                                                           "ecosar_SMILES",
-                                                                                           "vega_SMILES",
-                                                                                           "test_SMILES",
-                                                                                           'model_name'))
-      
-      # Remove the number_of columns
-      current_subset_long = current_subset_long[,!grepl(colnames(current_subset_long), pattern = 'number_of')]
-      
-      # Remove all rows with NA in value
-      current_subset_long = current_subset_long[!is.na(current_subset_long$value),]
-      
-      # Add information columns on endpoints, durations, species etc
-      
-      
-      
-      
-    }
-    
-    
-  }
+  # 
+  # if(in_format == 'wide'){
+  #   
+  #   print('Wide format processing')
+  #   
+  #   ################################################################################
+  #   # 3.1. VEGA processing
+  #   ################################################################################
+  #   
+  #   print('Processing vega first method')
+  #   
+  #   subset_filter = '(FAILSAFE)'
+  #   
+  #   # Invert the filters (translate from "what to keep" to "what to remove")
+  #   if('all' %in% vega_method){
+  #     inverted_filter = c()
+  #   } else {
+  #     filter_inverter_vector = c('experimental', 'low', 'moderate', 'good')
+  #     inverted_filter = filter_inverter_vector[!filter_inverter_vector %in% tolower(vega_method)]
+  #   }
+  #   
+  #   # Produce a filter string regexp
+  #   if('experimental' %in% inverted_filter){
+  #     subset_filter = paste(subset_filter, '(EXPERIMENTAL)', sep = '|') 
+  #   }
+  #   if('low' %in% inverted_filter){
+  #     subset_filter = paste(subset_filter, '(low)', sep = '|') 
+  #   }
+  #   if('moderate' %in% inverted_filter){
+  #     subset_filter = paste(subset_filter, '(moderate)', sep = '|') 
+  #   }
+  #   if('good' %in% inverted_filter){
+  #     subset_filter = paste(subset_filter, '(good)', sep = '|')
+  #   }
+  #   
+  #   # Get logical with TRUE for experimental or low quality
+  #   temp_replacement_matrix = mapply(current_subset, FUN = function(x){grepl(x = x, pattern = subset_filter) & !is.na(x)})
+  #   
+  #   # Remove colnames otherwise it's weird
+  #   colnames(temp_replacement_matrix) = NULL
+  #   
+  #   # remove first column and add last (shift the logicals one step)
+  #   temp_replacement_matrix = temp_replacement_matrix[,-1]
+  #   temp_replacement_matrix = cbind(temp_replacement_matrix, matrix(data = FALSE, nrow = nrow(temp_replacement_matrix)))
+  #   
+  #   # Replace true positions with NA
+  #   current_subset[temp_replacement_matrix] = NA
+  #   
+  #   # Save all columns with reliability and drop them (keeping only predicted values)
+  #   current_vega_reliabilities = current_subset[,grepl(colnames(current_subset),pattern = 'reliability') | colnames(current_subset) %in% c("original_CAS", 
+  #                                                                                                                                          "original_SMILES",
+  #                                                                                                                                          "InChIKey",
+  #                                                                                                                                          "ecosar_CAS",
+  #                                                                                                                                          "test_CAS", 
+  #                                                                                                                                          "ecosar_SMILES",
+  #                                                                                                                                          "vega_SMILES",
+  #                                                                                                                                          "test_SMILES" )]
+  #   current_subset = current_subset[,!grepl(colnames(current_subset),pattern = 'reliability')]
+  #   
+  #   # Make all predictions numeric
+  #   current_subset[,9:ncol(current_subset)] = sapply(current_subset[,9:ncol(current_subset)], as.numeric)
+  #   
+  #   
+  #   # define number of vega predictions used for mean
+  #   current_subset$VEGA_number_of_quality_predictions = rowSums(!is.na(current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA')]))
+  #   
+  #   current_subset = current_subset %>% relocate(VEGA_number_of_quality_predictions, .after = InChIKey)
+  #   
+  #   colnames(current_subset)[colnames(current_subset) == 'VEGA_number_of_quality_predictions'] = paste0('VEGA_number_of_quality_predictions_', current_species, '_', current_duration)
+  #   
+  #   #If geo_mean chosen as method
+  #   if('geo_mean' %in% vega_method){
+  #     current_subset$`VEGA_mean_prediction [mg/l]` = apply(
+  #       current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA_[^Nn]')], 
+  #       FUN = function(x){
+  #         geom_mean = exp(
+  #           sum(
+  #             log(
+  #               x[x > 0 & !is.na(x)]
+  #             ), 
+  #             na.rm = T
+  #           ) / length(x[x > 0 & !is.na(x)])
+  #         )
+  #         if(all(is.na(x) | x == 0)){
+  #           return(NA)
+  #         } else {
+  #           return(geom_mean)
+  #         }
+  #         
+  #       }, 
+  #       MARGIN = 1)
+  #     
+  #     current_subset = current_subset %>% relocate(`VEGA_mean_prediction [mg/l]`, .after = InChIKey)
+  #     
+  #     colnames(current_subset)[colnames(current_subset) == 'VEGA_mean_prediction [mg/l]'] = paste0('VEGA_mean_prediction_', current_species, '_', current_duration, ' [mg/l]')
+  #     
+  #   } else if('mean' %in% vega_method){
+  #     
+  #     current_subset$`VEGA_mean_prediction [mg/l]` = apply(
+  #       current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA_[^Nn]')], 
+  #       FUN = function(x){
+  #         mean_calc = mean(x[x > 0 & !is.na(x)])
+  #         if(all(is.na(x) | is.infinite(x) | x == 0)){
+  #           return(NA)
+  #         } else {
+  #           return(mean_calc)
+  #         }
+  #       }, 
+  #       MARGIN = 1)
+  #     
+  #     current_subset = current_subset %>% relocate(`VEGA_mean_prediction [mg/l]`, .after = InChIKey)
+  #     
+  #     colnames(current_subset)[colnames(current_subset) == 'VEGA_mean_prediction [mg/l]'] = paste0('VEGA_mean_prediction_', current_species, '_', current_duration, ' [mg/l]')
+  #     
+  #   } else if('lowest' %in% vega_method){
+  #     
+  #     current_subset$`VEGA_lowest_prediction [mg/l]` = apply(
+  #       current_subset[,grepl(x = colnames(current_subset), pattern = 'VEGA_[^Nn]')], 
+  #       FUN = function(x){
+  #         min_pred = suppressWarnings(min(x[x > 0 & !is.na(x)]))
+  #         if(all(is.na(x) | x == 0)){
+  #           return(NA)
+  #         } else {
+  #           return(min_pred)
+  #         }
+  #       }, 
+  #       MARGIN = 1)
+  #     
+  #     current_subset = current_subset %>% relocate(`VEGA_lowest_prediction [mg/l]`, .after = InChIKey)
+  #     
+  #     colnames(current_subset)[colnames(current_subset) == 'VEGA_lowest_prediction [mg/l]'] = paste0('VEGA_lowest_prediction_', current_species, '_', current_duration, ' [mg/l]')
+  #     
+  #   }
+  #   
+  #   if(data_filter == 'calculated'){
+  #     
+  #     current_subset = current_subset[,!grepl(x = colnames(current_subset), pattern = 'VEGA_[^nml]')]
+  #     
+  #   }
+  #   
+  #   ################################################################################
+  #   # 3.2. ECOSAR processing
+  #   ################################################################################
+  #   
+  #   print('processing ecosar first setting')
+  #   
+  #   # define number of ECOSAR predictions
+  #   current_subset$ECOSAR_number_of_prediction_classes = rowSums(!is.na(current_subset[,grepl(x = colnames(current_subset), pattern = 'ECOSAR')]))
+  #   
+  #   current_subset = current_subset %>% relocate(ECOSAR_number_of_prediction_classes, .after = InChIKey)
+  #   
+  #   colnames(current_subset)[colnames(current_subset) == 'ECOSAR_number_of_prediction_classes'] = paste0('ECOSAR_number_of_prediction_classes_', current_species, '_', current_duration)
+  #   
+  #   
+  #   # ECOSAR states in their user manual that "Traditionally, in the absence of adequate measured data, the most conservative effect level is
+  #   # used when predictions are identified from multiple classes", so pick out the most conservative (lowest) value if there are multiple prediction classes
+  #   
+  #   
+  #   if('low' %in% ecosar_method){
+  #     
+  #     current_subset$`ECOSAR_low [mg/l]` = apply(
+  #       current_subset, 
+  #       MARGIN = 1, 
+  #       FUN = function(x){
+  #         
+  #         temp = x[grepl(x = colnames(current_subset), pattern = 'ECOSAR_[^n]')]
+  #         
+  #         temp2 = suppressWarnings(min(as.numeric(temp), na.rm = T))
+  #         
+  #         if(!is.infinite(temp2)){
+  #           return(temp2)
+  #         } else {
+  #           return(NA)
+  #         }
+  #         
+  #       }
+  #     )
+  #     
+  #     current_subset = current_subset %>% relocate(`ECOSAR_low [mg/l]`, .after = InChIKey)
+  #     
+  #     colnames(current_subset)[colnames(current_subset) == 'ECOSAR_low [mg/l]'] = paste0('ECOSAR_low_', current_species, '_', current_duration, ' [mg/l]')
+  #     
+  #   } else if('mean' %in% ecosar_method){
+  #     
+  #     print('mean not currently supported for ECOSAR, rerun with "low" ')
+  #     
+  #   }
+  #   
+  #   
+  #   if(data_filter == 'calculated'){
+  #     
+  #     current_subset = current_subset[,!grepl(x = colnames(current_subset), pattern = 'ECOSAR_[^nml]')]
+  #     
+  #   }
+  #   
+  #   if(ecosar_dual_run){
+  #     
+  #     print('processing ecosar second setting')
+  #     
+  #     print('Short format needs some work, you doofus!')
+  #     
+  #     
+  #   }
+  #   
+  #   ################################################################################
+  #   # 3.3 Fixing some TEST naming issues
+  #   ################################################################################
+  #   
+  #   colnames(current_subset)[grepl(colnames(current_subset), pattern = 'TEST')] = str_replace(colnames(current_subset)[grepl(colnames(current_subset), pattern = 'TEST')], pattern = 'Fish', replacement = 'fish')
+  #   
+  #   
+  #   ################################################################################
+  #   # 3.4 Return data.frame
+  #   ################################################################################
+  #   
+  #   print('Finalizing output')
+  #   
+  #   if(out_format == 'wide'){
+  #     
+  #     return(current_subset)
+  #     
+  #   } else if(out_format == 'long') {
+  #     
+  #     current_value_columns = 
+  #       colnames(current_subset)[!colnames(current_subset) %in% c("original_CAS", 
+  #                                                                 "original_SMILES",
+  #                                                                 "InChIKey",
+  #                                                                 "ecosar_CAS",
+  #                                                                 "test_CAS", 
+  #                                                                 "ecosar_SMILES",
+  #                                                                 "vega_SMILES",
+  #                                                                 "test_SMILES" ) &
+  #                                  !grepl(colnames(current_subset), pattern = 'number_of')]
+  #     
+  #     
+  #     
+  #     current_subset_long = gather(current_subset,
+  #                                  key = model_name,
+  #                                  value = value,
+  #                                  all_of(current_value_columns),
+  #                                  factor_key = T,
+  #                                  na.rm = F)
+  #     
+  #     # Add information about vega predictions
+  #     
+  #     current_vega_reliability_columns = 
+  #       colnames(current_vega_reliabilities)[!colnames(current_vega_reliabilities) %in% c("original_CAS", 
+  #                                                                                         "original_SMILES",
+  #                                                                                         "InChIKey",
+  #                                                                                         "ecosar_CAS",
+  #                                                                                         "test_CAS", 
+  #                                                                                         "ecosar_SMILES",
+  #                                                                                         "vega_SMILES",
+  #                                                                                         "test_SMILES" ) &
+  #                                            grepl(colnames(current_vega_reliabilities), pattern = 'reliability')]
+  #     
+  #     
+  #     current_vega_reliabilities_long = gather(current_vega_reliabilities,
+  #                                            key = model_name,
+  #                                            value = reliability,
+  #                                            all_of(current_vega_reliability_columns),
+  #                                            factor_key = T,
+  #                                            na.rm = F)
+  #     
+  #     # Prepare merging of reliability values by renaming model_name in both sets
+  #     current_vega_reliabilities_long$model_name = str_replace(current_vega_reliabilities_long$model_name, 
+  #                                                              pattern = '(?<=assessment).+$',
+  #                                                              replacement = '')
+  #     current_subset_long$model_name = str_replace(current_subset_long$model_name, 
+  #                                                  pattern = '(?<=assessment).+$',
+  #                                                  replacement = '')
+  #     
+  #     
+  #     current_subset_long = merge(current_subset_long, current_vega_reliabilities_long, all.x = T, by = c("original_CAS", 
+  #                                                                                          "original_SMILES",
+  #                                                                                          "InChIKey",
+  #                                                                                          "ecosar_CAS",
+  #                                                                                          "test_CAS", 
+  #                                                                                          "ecosar_SMILES",
+  #                                                                                          "vega_SMILES",
+  #                                                                                          "test_SMILES",
+  #                                                                                          'model_name'))
+  #     
+  #     # Remove the number_of columns
+  #     current_subset_long = current_subset_long[,!grepl(colnames(current_subset_long), pattern = 'number_of')]
+  #     
+  #     # Remove all rows with NA in value
+  #     current_subset_long = current_subset_long[!is.na(current_subset_long$value),]
+  #     
+  #     # Add information columns on endpoints, durations, species etc
+  #     
+  #     
+  #     
+  #     
+  #   }
+  #   
+  #   
+  # }
   
   ################################################################################
   # 4. Long in_format processing
@@ -780,6 +801,11 @@ function(QSAR_output,
                                      ''),
                               'prediction[mg/l]')
           
+          
+          # Make sure no spaces from input arguments follows
+          model_name = str_replace_all(model_name, pattern = ' ', replacement = '_')
+          
+          
           new_row = c("original_CAS" = current_cas, 
                       "ecosar_CAS" = NA, 
                       "test_CAS" = NA, 
@@ -844,6 +870,9 @@ function(QSAR_output,
                                      'no_exp_',
                                      ''),
                               'prediction[mg/l]')
+          
+          # Make sure no spaces from input arguments follows
+          model_name = str_replace_all(model_name, pattern = ' ', replacement = '_')
           
           new_row = c("original_CAS" = current_cas, 
                       "ecosar_CAS" = NA, 
@@ -911,6 +940,9 @@ function(QSAR_output,
                                      'no_exp_',
                                      ''),
                               'prediction[mg/l]')
+          
+          # Make sure no spaces from input arguments follows
+          model_name = str_replace_all(model_name, pattern = ' ', replacement = '_')
           
           new_row = c("original_CAS" = current_cas, 
                       "ecosar_CAS" = NA, 
@@ -1063,6 +1095,9 @@ function(QSAR_output,
                                        ''),
                                 'prediction[mg/l]')
             
+            # Make sure no spaces from input arguments follows
+            model_name = str_replace_all(model_name, pattern = ' ', replacement = '_')
+            
             new_row = c("original_CAS" = current_cas, 
                         "ecosar_CAS" = NA, 
                         "test_CAS" = NA, 
@@ -1130,6 +1165,9 @@ function(QSAR_output,
                                        ''),
                                 'prediction[mg/l]')
             
+            # Make sure no spaces from input arguments follows
+            model_name = str_replace_all(model_name, pattern = ' ', replacement = '_')
+            
             new_row = c("original_CAS" = current_cas, 
                         "ecosar_CAS" = NA, 
                         "test_CAS" = NA, 
@@ -1195,6 +1233,9 @@ function(QSAR_output,
                                        'no_exp_',
                                        ''),
                                 'prediction[mg/l]')
+            
+            # Make sure no spaces from input arguments follows
+            model_name = str_replace_all(model_name, pattern = ' ', replacement = '_')
             
             new_row = c("original_CAS" = current_cas, 
                         "ecosar_CAS" = NA, 
@@ -1293,14 +1334,6 @@ function(QSAR_output,
             # Set model name to notify non-baseline predictions
             baseline = 'no_baseline_'
             
-            current_model_name = paste0('ECOSAR_',
-                                        species,
-                                        '_',
-                                        endpoint,
-                                        '_mean_', baseline, 'prediction [mg/l]')
-            
-            
-            
             current_values = current_subset[current_subset$QSAR_tool == 'ECOSAR' &
                                               !is.na(current_subset$value) &
                                               current_subset$original_CAS == current_cas &
@@ -1313,7 +1346,6 @@ function(QSAR_output,
             # Set model name to notify only baseline predictions
             baseline = 'baseline_only_'
             
-            
           }
         }
         
@@ -1324,7 +1356,12 @@ function(QSAR_output,
                                       species,
                                       '_',
                                       endpoint,
-                                      '_lowest_', baseline, 'prediction [mg/l]')
+                                      '_lowest_', 
+                                      baseline, 
+                                      'prediction [mg/l]')
+          
+          # Make sure no spaces from input arguments follows
+          current_model_name = str_replace_all(current_model_name, pattern = ' ', replacement = '_')
           
           ecosar_low = ifelse(
             length(current_values) == 1,
@@ -1346,7 +1383,7 @@ function(QSAR_output,
                       "vega_SMILES" = NA,
                       "test_SMILES" = NA,
                       "InChIKey" = current_subset[current_subset$original_CAS == current_cas, "InChIKey"][1],
-                      "model" = 'ECOSAR_low_prediction [mg/l]',
+                      "model" = current_model_name,
                       "value" = ecosar_low,
                       "reliability" = 'calculated',
                       "duration" = current_duration,
@@ -1372,7 +1409,7 @@ function(QSAR_output,
           
         } else if('mean' %in% ecosar_method){
           
-          print('mean not currently supported for ECOSAR, rerun with "low" ')
+          print('mean not currently supported for ECOSAR, rerun with "low" or "geo_mean" ')
           break
           
         } else if('geo_mean' %in% ecosar_method ){
@@ -1381,7 +1418,14 @@ function(QSAR_output,
                                       species,
                                       '_',
                                       endpoint,
-                                      '_geo_mean_', baseline, 'prediction [mg/l]')
+                                      '_geo_mean_', 
+                                      baseline, 
+                                      'prediction [mg/l]')
+          
+          
+          # Make sure no spaces from input arguments follows
+          current_model_name = str_replace_all(current_model_name, pattern = ' ', replacement = '_')
+          
           
           geo_mean = ifelse(
             length(current_values) == 1,
@@ -1457,6 +1501,7 @@ function(QSAR_output,
           
           # First we get "current_values"
           current_values = current_subset[current_subset$QSAR_tool == 'ECOSAR' &
+                                            is.na(current_subset$reliability) &
                                             !is.na(current_subset$value) &
                                             current_subset$original_CAS == current_cas, 'value']
           
@@ -1469,19 +1514,25 @@ function(QSAR_output,
           if('drop baseline' %in% ecosar_method2){
             
             if(sum(grepl(current_subset[current_subset$QSAR_tool == 'ECOSAR' &
+                                        is.na(current_subset$reliability) &
                                         !is.na(current_subset$value) &
                                         current_subset$original_CAS == current_cas, 'model'], pattern = 'Neutral_Organics')) < length(current_values)){
               
-              # Set model name to notify non-baseline predictions
-              current_model_name = paste0('ECOSAR_',
-                                          species,
-                                          '_',
-                                          endpoint,
-                                          '_mean_no_baseline_prediction [mg/l]')
+              # # Set model name to notify non-baseline predictions
+              # current_model_name = paste0('ECOSAR_',
+              #                             species,
+              #                             '_',
+              #                             endpoint,
+              #                             '_mean_no_baseline_prediction [mg/l]')
+              # 
+              #
+              # # Make sure no spaces from input arguments follows
+              # current_model_name = str_replace_all(current_model_name, pattern = ' ', replacement = '_')
               
               baseline = 'no_baseline_'
               
               current_values = current_subset[current_subset$QSAR_tool == 'ECOSAR' &
+                                                is.na(current_subset$reliability) &
                                                 !is.na(current_subset$value) &
                                                 current_subset$original_CAS == current_cas &
                                                 !grepl(current_subset$model, pattern = 'Neutral_Organics'), 'value']
@@ -1505,6 +1556,11 @@ function(QSAR_output,
                                         '_',
                                         endpoint,
                                         '_lowest_', baseline, 'prediction [mg/l]')
+            
+            
+            # Make sure no spaces from input arguments follows
+            current_model_name = str_replace_all(current_model_name, pattern = ' ', replacement = '_')
+            
             
             ecosar_low = ifelse(
               length(current_values) == 1,
@@ -1562,6 +1618,11 @@ function(QSAR_output,
                                         '_',
                                         endpoint,
                                         '_geo_mean_', baseline, 'prediction [mg/l]')
+            
+            
+            # Make sure no spaces from input arguments follows
+            current_model_name = str_replace_all(current_model_name, pattern = ' ', replacement = '_')
+            
             
             geo_mean = ifelse(
               length(current_values) == 1,

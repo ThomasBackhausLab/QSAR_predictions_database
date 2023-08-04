@@ -1,5 +1,6 @@
 # QSAR_predictions_database
-A repository for the QSAR prediction database project
+
+This repository contains the script and output data described in the "Dataset on ecotoxicity predictions of 2676 chemicals, using three ecotoxicological quantitative structure-activity relationship platforms" journal article.
 
 These scripts may be used under the Creative Commons Attribution-NonCommercial (CC-BY-NC) license. Below follows a short guide to their usage.
 

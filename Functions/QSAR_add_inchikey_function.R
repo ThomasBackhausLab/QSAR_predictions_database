@@ -5,6 +5,9 @@
 #
 # Original author: Patrik Svedberg
 #
+# Contact email: patrik.svedberg@bioenv.gu.se
+# (if the above doesnt work (i.e. years down the line) try p.a.svedberg@gmail.com)
+#
 # Based on the script QSARmerger_vX.R:
 # 
 #

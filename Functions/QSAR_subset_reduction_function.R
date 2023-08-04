@@ -6,6 +6,9 @@
 #
 # Original author: Patrik Svedberg
 #
+# Contact email: patrik.svedberg@bioenv.gu.se
+# (if the above doesnt work (i.e. years down the line) try p.a.svedberg@gmail.com)
+#
 # Based on the output of the function QSAR_processing_function.R
 # 
 #

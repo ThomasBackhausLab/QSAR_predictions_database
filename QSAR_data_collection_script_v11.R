@@ -6,6 +6,9 @@
 #
 # Original author: Patrik Svedberg
 #
+# Contact email: patrik.svedberg@bioenv.gu.se
+# (if the above doesnt work (i.e. years down the line) try p.a.svedberg@gmail.com) 
+#
 # Based on the output of QSAR models:
 # 
 # Vega 1.1.5 LC50/EC50/NOEC models
@@ -130,12 +133,6 @@
 # for the ECOTOX database
 #
 #
-# ------------------------------------------------------------------------------
-#
-# QSAR outputs (which serve as input to this script) are handled within the QSAR_processing_function and will not be
-# specified here
-#
-#
 ################################################################################
 
 
@@ -165,15 +162,79 @@
 #
 ################################################################################
 
-####### Intermediate/dump files:
+####### Intermediate files:
 #
 # Intermediate/dump files are produced and/or loaded within the script to reduce script
 # times when rerunning the script. In general they contain collected data
 # from various APIs which are generally query-capped. They can take anywhere
-# from a few minutes to half a day to reproduce. No further details of them will be
-# noted here, but they should all be located in the "intermediate files" directory
-# of the repository. The repo contains existing dump files, but if you want to
+# from a few minutes to half a day to reproduce. 
+# 
+# The repo contains existing dump files, but if you want to
 # run a fresh collection, you are advised to move these to a backup folder first.
+#
+#
+# ----"ECOTOX_filtered_11.Rda", 
+# 
+# the ECOTOX database post building, cleanup and filtering
+#
+# ----"ECOTOX_identifiers_11.Rda"
+#
+# compound metadata from the ECOTOX database
+#
+# ----"ECOTOX_identifiers_cir_dump.Rda"
+#
+# compound metadata from the ECOTOX database post cir_query
+#
+# ----"EFSA_CIR_dump.Rda"
+#
+# compound metadata from the EFSA database post cir_query
+#
+# ----"EFSA_filtered_11.Rda"
+#
+# the EFSA database post cleanup and filtering
+#
+# ----"EFSA_identifiers_11.Rda"
+#
+# compound metadata from the EFSA database
+#
+# ----"experimental_dataset_post_merge_v11.Rda"
+#
+# The merged empirical data
+#
+# ----"identifiers_11.Rda"
+#
+# 
+#
+# ----"identifiers_cid_dump.Rda"
+#
+#
+#
+# ----"identifiers_logkow_pka_dump.Rda"
+#
+#
+#
+# ----"identifiers_post_merge_v11.Rda"
+#
+#
+#
+# ----"inchikey_dumpfile.Rda"
+#
+#
+#
+# ----"logp_dump.Rda"
+#
+#
+#
+# ----"pka_dump.Rda"
+#
+#
+#
+# ----"QSAR_all_processec_v11.Rda"
+#
+#
+#
+# ----"qsar_data_11.Rda"
+#
 #
 #
 ################################################################################
@@ -233,6 +294,8 @@ lapply(packages, require, character.only = TRUE)
 # Git directory
 git_directory <- 'C:/Git/QSAR_predictions_database'
 
+setwd(git_directory)
+
 # Input directory (for input files other than very large databases)
 input_directory <- 'C:/Git/QSAR_predictions_database/Input'
 
@@ -245,7 +308,7 @@ intermediate_directory <- 'C:/Git/QSAR_predictions_database/Intermediate files'
 
 ## Paths to raw data (These can be very large files and may not be suited for storage in git directory)
 EFSA_filepath = 'E:/Datasets/EFSA/Full table.xlsx'
-ECOTOX_filepath = 'E:/Datasets/US_EPA_ECOTOX/ECOTOX 09_15_2022 v8.Rda'
+ECOTOX_filepath = 'E:/Datasets/US_EPA_ECOTOX/ecotox_ascii_09_15_2022'
 
 
 # QSAR directory (function will make subfolders here)
@@ -264,6 +327,7 @@ EFSA_cleanup_function = dget('Functions/EFSA_cleanup_function.R')
 EFSA_filter_function = dget('Functions/EFSA_filter_function.R')
 QSAR_add_smiles_function = dget('Functions/QSAR_add_smiles_function.R')
 ECOTOX_import_function = dget('Functions/ECOTOX_import_function.R')
+ECOTOX_build_function = dget('Functions/ECOTOX_build_function.R')
 ECOTOX_cleanup_function = dget('Functions/ECOTOX_cleanup_function.R')
 ECOTOX_filter_function = dget('Functions/ECOTOX_filter_function.R')
 QSAR_add_inchikey_function = dget('Functions/QSAR_add_inchikey_function.R')
@@ -340,9 +404,6 @@ if(!is.null(EFSA_filepath) & !is.na(EFSA_filepath)){
   EFSA_identifiers = EFSA_handle[['EFSA_identifiers']]
   rm('EFSA_handle')
   
-  # Save identifiers separately
-  save(EFSA_identifiers, file = paste0(intermediate_directory, '/EFSA_identifiers.Rda'))
-  
 } else {
   
   print('No EFSA filepath provided, the rest of the script may not run properly without it')
@@ -380,9 +441,9 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
   # QSAR_add_smiles_function = dget('QSAR_add_smiles_function.R')
   
   # Import ECOTOX
-  ECOTOX_handle = ECOTOX_import_function(ECOTOX_filepath,
+  ECOTOX_handle = ECOTOX_import_function(ECOTOX_filepath = ECOTOX_filepath,
                                          version = version,
-                                         rerun = F,
+                                         rerun = T,
                                          filters = ECOTOX_filters,
                                          molweight_dump = ECOTOX_molweights_file,
                                          paste0(intermediate_directory, '/ECOTOX_identifiers_cir_dump.Rda'),
@@ -393,10 +454,6 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
   ECOTOX_identifiers = ECOTOX_handle[['ECOTOX_identifiers']]
   rm('ECOTOX_handle')
   
-  
-  save(ECOTOX_identifiers, file = paste0(intermediate_directory, '/ECOTOX_identifiers.Rda'))
-  #load(file = 'ECOTOX_identifiers.Rda')
-
 } else {
   
   print('No ECOTOX filepath provided, the rest of the script may not run properly without it')
@@ -1208,8 +1265,8 @@ identifiers$logkow = ifelse(identifiers$logkow == 'NA', NA, identifiers$logkow)
 nrow(identifiers[is.na(identifiers$logkow),])
 
 # Save all identifiers, for work on other systems
-save(identifiers, file = paste0(intermediate_directory, '/identifiers_', version, '.Rda'))
-# load(file = paste0(intermediate_directory, '/identifiers_', version, '.Rda'))
+save(identifiers, file = paste0(intermediate_directory, '/identifiers_v', version, '.Rda'))
+# load(file = paste0(intermediate_directory, '/identifiers_v', version, '.Rda'))
 
 
 ################################################################################

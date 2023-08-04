@@ -4,6 +4,9 @@
 #
 # Original author: Patrik Svedberg
 #
+# Contact email: patrik.svedberg@bioenv.gu.se
+# (if the above doesnt work (i.e. years down the line) try p.a.svedberg@gmail.com)
+#
 # Based on the script QSARmerger_vX.R:
 # 
 #
@@ -91,7 +94,7 @@ function(ECOTOX_database,
     ## filter out formulations (ECOTOX handles this differently than EFSA and so this part is a bit wonky)
     
     # Get terms for non-formulations (using regexp to match descriptions or definitions in ecotox appendix)
-    ecotox_chemical_formulations = read.csv(file = 'C:/Users/admin/Downloads/ECOTOX-Term-Appendix-C.csv')
+    ecotox_chemical_formulations = read.csv(file = 'Additional data/ECOTOX-Term-Appendix-C.csv')
     ecotox_chemical_formulations_no_formulation = 
       ecotox_chemical_formulations[
         !grepl(ecotox_chemical_formulations$DEFINITION, 

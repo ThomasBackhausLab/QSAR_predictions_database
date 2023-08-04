@@ -4,6 +4,9 @@
 #
 # Original author: Patrik Svedberg
 #
+# Contact email: patrik.svedberg@bioenv.gu.se
+# (if the above doesnt work (i.e. years down the line) try p.a.svedberg@gmail.com)
+#
 # Based on the script QSARmerger_vX.R:
 # 
 #
@@ -49,6 +52,7 @@ function(ECOTOX_filepath,
          molweight_dump = NULL,
          settings = NULL){
   
+  ECOTOX_build_function = dget('Functions/ECOTOX_build_function.R')
   ECOTOX_cleanup_function = dget('Functions/ECOTOX_cleanup_function.R')
   ECOTOX_filter_function = dget('Functions/ECOTOX_filter_function.R')
   QSAR_add_smiles_function = dget('Functions/QSAR_add_smiles_function.R')
@@ -89,14 +93,12 @@ function(ECOTOX_filepath,
   
   if(!load_cache_file){
     
-    print('Loading ECOTOX file')
+    print('Building ECOTOX from ascii')
     
-    # Load usepa ecotox
-    if(file.exists(ECOTOX_filepath)){
-      load(ECOTOX_filepath)
-    } else {
-      print('Unknown ECOTOX file or filepath')
-    }
+    ECOTOX = ECOTOX_build_function(ECOTOX_ascii_path = ECOTOX_filepath,
+                                   settings = NULL)
+    
+    print('Finished building ECOTOX from ascii')
     
     # reporting loss of data due to filtering etc, this is the first report
     print('Number of data points in ECOTOX raw:')

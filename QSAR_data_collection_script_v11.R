@@ -201,41 +201,40 @@
 #
 # The merged empirical data
 #
-# ----"identifiers_11.Rda"
+# ----identifiers_11.Rda" 
 #
+# The chemical identifiers and physicochemical data used in the QSAR predictions datbase project 
+# ----"identifiers_cid_dump.Rda" 
+#
+# The chemical identifiers used in the QSAR predictions datbase project, post collection of CID 
 # 
+# ----"identifiers_logkow_pka_dump.Rda" 
 #
-# ----"identifiers_cid_dump.Rda"
+# The chemical identifiers used in the QSAR predictions datbase project, post collection of pka and logp (logkow) 
 #
+# ----"identifiers_post_merge_v11.Rda" 
 #
+# The chemical identifiers used in the QSAR predictions datbase project, post merge 
 #
-# ----"identifiers_logkow_pka_dump.Rda"
+# ----"inchikey_dumpfile.Rda" 
+# 
+# The InChIKeys used in the QSAR predictions datbase project 
+# 
+# ----"logp_dump.Rda" 
+# 
+# A lookup table for collected logp (logkow) 
 #
+# ----"pka_dump.Rda" 
 #
+# A lookup table for collected logp (pka) 
+# 
+# ----"QSAR_all_processec_v11.Rda" 
 #
-# ----"identifiers_post_merge_v11.Rda"
+# A backup of the processed QSAR predictions, long format 
 #
+# ----"qsar_data_11.Rda" 
 #
-#
-# ----"inchikey_dumpfile.Rda"
-#
-#
-#
-# ----"logp_dump.Rda"
-#
-#
-#
-# ----"pka_dump.Rda"
-#
-#
-#
-# ----"QSAR_all_processec_v11.Rda"
-#
-#
-#
-# ----"qsar_data_11.Rda"
-#
-#
+# A backup of the "raw" QSAR predictions, long format
 #
 ################################################################################
 
@@ -343,7 +342,6 @@ version = 11
 # If False  will use dumpfiles if they exist (Faster option)
 forced_rerun = F
 
-
 ## Set standard species for fish and algae (synonyms on same rows, unique species on new row)
 oecd_fish_species = c('Danio rerio', 'Cyprinus rerio', 'Brachydanio rerio',
                       'Pimephales promelas',
@@ -367,6 +365,16 @@ stop('Please do not "run all" in this script - run section by section')
 ################################################################################
 #           2. Loading empirical data                                          #
 ################################################################################
+
+# Before anything, if forced_rerun is set to T, ask if intermediate files should be backuped
+# This may be made into a dir selection function later
+if(forced_rerun){
+  print('You are about to overwrite all intermediate files')
+  print('You should make backups of thses files before running the script')
+  
+  stop('Make backups of intermediate files, then start the script again')
+  
+}
 
 ################################################################################
 #           2.1. Importing and filtering EFSA                                  #

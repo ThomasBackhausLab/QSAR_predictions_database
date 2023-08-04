@@ -1628,10 +1628,10 @@ for(i in 1:ncol(identifiers)){
 }
 
 # Save identifiers and physicochemical information in output folder
-write.table(identifiers, file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
+write.table(identifiers, file = paste0(output_directory, '/identifiers_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-# identifiers_new = fread(file = paste0(output_directory, '/identifiers_', version, '.csv'), sep = '\t')
+# identifiers_new = fread(file = paste0(output_directory, '/identifiers_v', version, '.csv'), sep = '\t')
 
 # Note that there are some compounds from the original empirical data for which we have no QSAR predictions
 identifiers_missing_predictions = identifiers[!identifiers$original_CAS %in% QSAR_all_wide$META_original_CAS,]

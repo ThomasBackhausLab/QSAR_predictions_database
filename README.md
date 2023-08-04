@@ -5,13 +5,13 @@ This repository contains the script(s) and output data described in the "Dataset
 These scripts may be used under the Creative Commons Attribution-NonCommercial (CC-BY-NC) license, if you need to cite it please use the CITATION.cff. 
 
 
-## Below follows a short guide to usaing the script
+## Below follows a short guide to using the script
 
 QSAR_data_collection_script_v11.R is the main script used to produce the dataset. It calls a number of helper functions, located under the subfolder “Functions”. The main script handles directory management and packages, standardization and merging of empirical data, extraction of identifiers from empirical data, gathering of physicochemical properties, output data formatting and output data export.
 
-Specific functions are called for import of empirical data, cleaning and filtering of empirical data, collection of SMILES and InChIKeys, running QSAR platforms, importing and curating QSAR outputs and calculating compounded QSAR predictions. For a full list of function files and a short description of their uses can be found below.
+Specific functions are called for import of empirical data, cleaning and filtering of empirical data, collection of SMILES and InChIKeys, running QSAR platforms, importing and curating QSAR outputs and calculating compounded QSAR predictions. A full list of function files and a short description of their uses can be found below.
 
-A handful of intermediate files are created by the script to reduce the load on third party APIs and to avoid rerunning time consuming steps of the script, unless instructed to. These files can be found under the “Intermediate files” folder. For a full list of intermediate files and a short description of their purpose can be found below.
+A handful of intermediate files are created by the script to reduce the load on third party APIs and to avoid rerunning time consuming steps of the script, unless instructed to. These files can be found under the “Intermediate files” folder. A full list of intermediate files and a short description of their purpose can be found below.
 
 The script was written (and is functional) in R version 4.1.3 using the RStudio editor version 2022.12.0 Build 353
 

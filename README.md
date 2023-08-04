@@ -17,21 +17,16 @@ The script was written (and is functional) in R version 4.1.3 using the RStudio 
 
 ###The main script and all helper functions rely on the following R-packages:
 
+|Package|Version
 |-----------|------------|
 |data.table      |1.14.2|
-|-----------|------------|
 |stringr         |1.4.0|
-|-----------|------------|
 |dplyr           |1.0.8|
-|-----------|------------|
 |tidyr           |1.2.0|
-|-----------|------------|
 |readr           |2.1.2|
-|-----------|------------|
 |webchem         |1.1.3|
-|-----------|------------|
 |readxl          |1.4.0|
-|-----------|------------|
+
 
 The empirical dataset contains data from the following sources:
 US EPA ECOTOX [1] ASCII-file direct link:
@@ -40,65 +35,39 @@ EFSA pesticide report [2]:
 Pierobon, E., Neri, M. C., Marroncelli, S., & Croce, V. (2012). Completion of data entry of pesticide ecotoxicology Tier 1 study endpoints in a XML schema–database. EFSA Supporting Publications, 9(11), 326E
 
 ## Function files:
+|Function|Description|
 |-----------|------------|
 |"ECOTOX_build_function.R"            |A function to build a dataframe from the ECOTOX ascii-download|
-|-----------|------------|
 |"ECOTOX_cleanup_function.R"          |A function to clean up the ECOTOX dataframe (remove special characters, fixing CAS errors, translating concentrations to mg/l, translating species to correct names and converting durations to hours)|
-|-----------|------------|
 |"ECOTOX_filter_function.R"           |A function to filter the ECOTOX database based on filter settings|
-|-----------|------------|
 |"ECOTOX_import_function.R"           |A function that wraps the other three ECOTOX-functions, and serves to prepare the ECOTOX database for the current project|
-|-----------|------------|
 |"EFSA_cleanup_function.R"            |A function to clean up the EFSA dataframe (fixing CAS errors, translating concentrations to mg/l, translating species to correct names and converting durations to hours)|
-|-----------|------------|
 |"EFSA_filter_function.R"             |A function to filter the ECOTOX database based on filter settings|
-|-----------|------------|
 |"EFSA_import_function.R"             |A function that wraps the other three EFSA-functions, and serves to prepare the EFSA data for the current project|
-|-----------|------------|
 |"QSAR_add_inchikey_function.R"       |A function that wraps the chemical identifier resolver (CIR) query functon for InChIKeys in webchem for the QSAR predictions database project|
-|-----------|------------|
 |"QSAR_add_smiles_function.R"         |A function that wraps the chemical identifier resolver (CIR) query functon for SMILES in webchem for the QSAR predictions database project, in addition manually curates some SMILES|
-|-----------|------------|
 |"QSAR_processing_function.R"         |A function that starts, assists with and collects the results of the three QSAR platforms used in the QSAR predictions database project|
-|-----------|------------|
 |"QSAR_subset_reduction_function.R"   |A function that reduces QSAR predictions to single predictions per subset (or keeps both the raw and calculated predictions, as per arguments)|
-|-----------|------------|
-
 
 ## Intermediate files:
+|File|Description|
 |-----------|------------|
 |"ECOTOX_filtered_11.Rda"                       |the ECOTOX database post building, cleanup and filtering|
-|-----------|------------|
 |"ECOTOX_identifiers_11.Rda"                    |compound metadata from the ECOTOX database|
-|-----------|------------|
 |"ECOTOX_identifiers_cir_dump.Rda"              |compound metadata from the ECOTOX database post cir_query|
-|-----------|------------|
 |"EFSA_CIR_dump.Rda"                            |compound metadata from the EFSA database post cir_query|
-|-----------|------------|
 |"EFSA_filtered_11.Rda"                         |the EFSA database post cleanup and filtering|
-|-----------|------------|
 |"EFSA_identifiers_11.Rda"                      |compound metadata from the EFSA database|
-|-----------|------------|
 |"experimental_dataset_post_merge_v11.Rda"      |The merged empirical data|
-|-----------|------------|
 |"identifiers_11.Rda"                           |The chemical identifiers and physicochemical data used in the QSAR predictions datbase project|
-|-----------|------------|
 |"identifiers_cid_dump.Rda"                     |The chemical identifiers used in the QSAR predictions datbase project, post collection of CID|
-|-----------|------------|
 |"identifiers_logkow_pka_dump.Rda"              |The chemical identifiers used in the QSAR predictions datbase project, post collection of pka and logp (logkow)|
-|-----------|------------|
 |"identifiers_post_merge_v11.Rda"               |The chemical identifiers used in the QSAR predictions datbase project, post merge|
-|-----------|------------|
 |"inchikey_dumpfile.Rda"                        |The InChIKeys used in the QSAR predictions datbase project|
-|-----------|------------|
 |"logp_dump.Rda"                                |A lookup table for collected logp (logkow)|
-|-----------|------------|
 |"pka_dump.Rda"                                 |A lookup table for collected logp (pka)|
-|-----------|------------|
 |"QSAR_all_processec_v11.Rda"                   |A backup of the processed QSAR predictions, long format|
-|-----------|------------|
 |"qsar_data_11.Rda"                             |A backup of the "raw" QSAR predictions, long format|
-|-----------|------------|
 
 
 

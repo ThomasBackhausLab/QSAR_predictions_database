@@ -50,6 +50,7 @@ function(EFSA_filepath,
                         'salts' = '\\.',
                         'medium' = 'freshwater'),
          efsa_cir_dumpfile = paste0(intermediate_directory, '/EFSA_CIR_dump.Rda'),
+         ECx_to_NOEC = NULL,
          settings = NULL){
   
   # Get functions
@@ -138,6 +139,7 @@ function(EFSA_filepath,
     # With the setting "fix species" to translate all old species names to new and add species_group
     print('Running EFSA_cleanup_function')
     EFSA_clean = EFSA_cleanup_function(EFSA,
+                                       ECx_to_NOEC = ECx_to_NOEC,
                                        settings = c('fix species'))
     
     ## We drop entries that has no CAS after cleanup, since it will introduce issues downstream
@@ -195,7 +197,7 @@ function(EFSA_filepath,
     print('Number of data points in EFSA after filter:')
     print(nrow(EFSA_filtered))
     print('Number of unique CAS in EFSA after filter:')
-    print(length(unique(EFSA_filtered$CASNO)))
+    print(length(unique(EFSA_filtered$original_CAS)))
     
     
     # Save EFSA_filtered, for work on other systems

@@ -53,7 +53,7 @@ function(ECOTOX_database,
   
   # Check if additional settings provided
   if(is.null(settings)){
-    print('No additional settings provided, only fixing CAS-numbers')
+    print('No additional settings for filter function provided')
     
     # Reset settings to empty string (to allow tolower to work)
     settings = ''
@@ -82,6 +82,10 @@ function(ECOTOX_database,
   
   # Operator filter (if used)
   if('operator' %in% names(filters)& 'conc1_mean_op' %in% colnames(ECOTOX_database)){
+    
+    # Set conc1_mean_op to "none" if empty
+    ECOTOX_database$conc1_mean_op = ifelse(ECOTOX_database$conc1_mean_op == '', 'None', ECOTOX_database$conc1_mean_op)
+    
     # filter out limit values
     ECOTOX_database = ECOTOX_database[ECOTOX_database$conc1_mean_op %in% filters[['operator']],]
     

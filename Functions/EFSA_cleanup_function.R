@@ -42,6 +42,7 @@
 ################################################################################
 
 function(EFSA_database,
+         ECx_to_NOEC = NULL,
          settings = NULL){
   
   # Check that the input makes sense
@@ -56,9 +57,15 @@ function(EFSA_database,
   }
   
   fix_species = F
-  if(ifelse(is.vector(settings), 'fix species' %in% tolower(settings), tolower(settings) == 'fix species')){
+  if(!is.null(settings) & ifelse(is.vector(settings), 'fix species' %in% tolower(settings), tolower(settings) == 'fix species')){
     fix_species = T
     print('Fixing species setting (old names -> new), adding species group and removing anything in parenthesis')
+  }
+  
+  ECx_to_NOEC_bool = F
+  if(!is.null(ECx_to_NOEC)){
+    ECx_to_NOEC_bool = T
+    print(paste0('ECx_to_NOEC set, translating ', ECx_to_NOEC, ' into NOECs'))
   }
   
   ################################################################################
@@ -275,6 +282,51 @@ function(EFSA_database,
                                  )
   )
   
+  
+  # If some ECx_to_NOEC is set, we run this here
+  if(ECx_to_NOEC_bool){
+    
+    # Check if single value, or vector and handle as such
+    if(length(ECx_to_NOEC) == 1){
+      
+      # Single value
+      current_ECx = ECx_to_NOEC
+      
+      # Make a regexp out of the ECx (for LCx, ICx etc)
+      current_ECx = str_replace(current_ECx, pattern = '^[EIL]{1}', replacement = '[EIL]{1}')
+      
+      # Add a stop to the regexp, to avoid getting EC100s and the like
+      current_ECx = paste0(current_ECx, '$')
+      
+      EFSA_database$endpointType = ifelse(grepl(EFSA_database$endpointType, pattern = current_ECx),
+                                          'NOEC',
+                                          EFSA_database$endpointType)
+        
+    } else if(length(ECx_to_NOEC) > 1){
+      
+      # Multivalue, loop over values
+      for(i in 1:length(ECx_to_NOEC)){
+        
+        current_ECx = ECx_to_NOEC[i]
+        
+        # Make a regexp out of the ECx (including LCx, ICx)
+        current_ECx = str_replace(current_ECx, pattern = '^[EIL]{1}', replacement = '[EIL]{1}')
+        
+        # Add a stop to the regexp, to avoid getting EC100s and the like
+        current_ECx = paste0(current_ECx, '$')
+        
+        EFSA_database$endpointType = ifelse(grepl(EFSA_database$endpointType, pattern = current_ECx),
+                                            'NOEC',
+                                            EFSA_database$endpointType)
+        
+        
+      }
+      
+      
+    }
+    
+    
+  }
   
   
   

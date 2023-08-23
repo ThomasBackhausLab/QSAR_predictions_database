@@ -42,6 +42,7 @@
 
 function(ECOTOX_database,
          molweights = NULL,
+         ECx_to_NOEC = NULL,
          settings = NULL){
   
   # Check that the input makes sense
@@ -348,7 +349,6 @@ function(ECOTOX_database,
                                                        ifelse(ECOTOX_database$obs_duration_unit == 'mo',
                                                               ECOTOX_database$obs_duration_mean * 24 * 7 * 30,
                                                               ECOTOX_database$Duration_hour))))
-  
   
   
   

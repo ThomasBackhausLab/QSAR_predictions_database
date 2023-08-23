@@ -908,7 +908,7 @@ function(identifiers,
                         'value'),
               .keep_all = T)
           
-          # Chechk if we have duplicates
+          # Check if we have duplicates
           if(any(duplicated(temp_frame$model))){
             
             #print(paste0('CAS with an issue: ', current_CAS))

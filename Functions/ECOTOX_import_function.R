@@ -50,6 +50,7 @@ function(ECOTOX_filepath,
                         'endpoint' = c('NOEC', 'EC50', 'LC50', 'IC50', 'LD50')),
          ecotox_cir_dumpfile = paste0(intermediate_directory, '/ECOTOX_identifiers_cir_dump.Rda'),
          molweight_dump = NULL,
+         ECx_to_NOEC = NULL,
          settings = NULL){
   
   ECOTOX_build_function = dget('Functions/ECOTOX_build_function.R')
@@ -86,6 +87,11 @@ function(ECOTOX_filepath,
     
   }
   
+  ECx_to_NOEC_bool = F
+  if(!is.null(ECx_to_NOEC)){
+    ECx_to_NOEC_bool = T
+    print(paste0('ECx_to_NOEC set, translating ', ECx_to_NOEC, ' into NOECs'))
+  }
   
   ################################################################################
   # 2. function body
@@ -106,9 +112,63 @@ function(ECOTOX_filepath,
     print('Number of unique CAS in ECOTOX raw:')
     print(length(unique(ECOTOX$cas_number)))
     
+    
+    # If some ECx_to_NOEC is set, we run this here before initial filter
+    if(ECx_to_NOEC_bool){
+      
+      # Check if single value, or vector and handle as such
+      if(length(ECx_to_NOEC) == 1){
+        
+        # Single value
+        current_ECx = ECx_to_NOEC
+        
+        # Make a regexp out of the ECx (for LCx, ICx etc)
+        current_ECx = str_replace(current_ECx, pattern = '^[EIL]{1}[DC]{1}', replacement = '[EIL]{1}[DC]{1}')
+        
+        # Add a stop to the regexp, to avoid getting EC100s and the like
+        current_ECx = paste0(current_ECx, '$')
+        
+        ECOTOX$endpoint = ifelse(grepl(ECOTOX$endpoint, pattern = current_ECx),
+                                          'NOEC',
+                                          ECOTOX$endpoint)
+        
+        
+        head(sort(table(ECOTOX$endpoint), decreasing = T), n = 200)
+        
+        
+      } else if(length(ECx_to_NOEC) > 1){
+        
+        # Multivalue, loop over values
+        for(i in 1:length(ECx_to_NOEC)){
+          
+          current_ECx = ECx_to_NOEC[i]
+          
+          # Make a regexp out of the ECx (including LCx, ICx)
+          current_ECx = str_replace(current_ECx, pattern = '^[EIL]{1}[DC]{1}', replacement = '[EIL]{1}[DC]{1}')
+          
+          # Add a stop to the regexp, to avoid getting EC100s and the like
+          current_ECx = paste0(current_ECx, '$')
+          
+          ECOTOX$endpoint = ifelse(grepl(ECOTOX$endpoint, pattern = current_ECx),
+                                   'NOEC',
+                                   ECOTOX$endpoint)
+          
+          
+        }
+      }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
     # Initial filtering using filter function (to reduce computational load of further steps)
     print('Running ECOTOX_filter_function for the first time')
-    ECOTOX_filtered_initial = ECOTOX_filter_function(ECOTOX, filters = filters)
+    ECOTOX_filtered_initial = ECOTOX_filter_function(ECOTOX_database = ECOTOX, 
+                                                     filters = filters)
     
     # reporting loss of data due to filtering etc, this is the second report
     print('Number of data points in ECOTOX after initial filters:')
@@ -118,8 +178,9 @@ function(ECOTOX_filepath,
     
     # Clean up ECOTOX with function
     print('Running ECOTOX_cleanup_function')
-    ECOTOX_clean = ECOTOX_cleanup_function(ECOTOX_filtered_initial, 
+    ECOTOX_clean = ECOTOX_cleanup_function(ECOTOX_database = ECOTOX_filtered_initial, 
                                            molweights = molweight_dump,
+                                           ECx_to_NOEC = ECx_to_NOEC,
                                            settings = c('fix species', 'fix molweights'))
     
     

@@ -1623,10 +1623,10 @@ QSAR_all_wide = cbind(QSAR_all_wide[,meta_coln_id], QSAR_all_wide[,ecosar_raw_co
 ## QSAR prediction data
 
 # Save the wide format dataframe in tab separated tsv
-write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v', version, '.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
+write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-# QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_predictions_v', version, '.tsv'), sep = '\t')
+# QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_predictions.tsv'), sep = '\t')
 
 
 ## Identifiers
@@ -1653,10 +1653,10 @@ for(i in 1:ncol(identifiers)){
 }
 
 # Save identifiers and physicochemical information in output folder
-write.table(identifiers, file = paste0(output_directory, '/identifiers_v', version, '.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
+write.table(identifiers, file = paste0(output_directory, '/identifiers.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-# identifiers_new = fread(file = paste0(output_directory, '/identifiers_v', version, '.tsv'), sep = '\t')
+identifiers_new = fread(file = paste0(output_directory, '/identifiers.tsv'), sep = '\t')
 
 # Note that there are some compounds from the original empirical data for which we have no QSAR predictions
 identifiers_missing_predictions = identifiers[!identifiers$original_CAS %in% QSAR_all_wide$META_original_CAS,]
@@ -1686,10 +1686,10 @@ for(i in 1:ncol(experimental_dataset)){
 }
 
 # Save empirical data in output folder
-write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset_v', version, '.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
+write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-# experimental_dataset_new = fread(file = paste0(output_directory, '/experimental_dataset_v', version, '.tsv'), sep = '\t')
+# experimental_dataset_new = fread(file = paste0(output_directory, '/experimental_dataset.tsv'), sep = '\t')
 
 # Remove any double checked files
 rm(list = ls()[grep("new$", ls())])

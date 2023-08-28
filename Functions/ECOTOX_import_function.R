@@ -48,8 +48,8 @@ function(ECOTOX_filepath,
                         'medium' = '(FW)|(NONE)',
                         'species' = c(daphnia_species, oecd_fish_species, oecd_algae_species),
                         'endpoint' = c('NOEC', 'EC50', 'LC50', 'IC50', 'LD50')),
-         ecotox_cir_dumpfile = paste0(intermediate_directory, '/ECOTOX_identifiers_cir_dump.Rda'),
-         molweight_dump = NULL,
+         ecotox_cir_lookupfile = paste0(intermediate_directory, '/ECOTOX_identifiers_cir_lookup.Rda'),
+         molweight_lookup = NULL,
          ECx_to_NOEC = NULL,
          settings = NULL){
   
@@ -179,7 +179,7 @@ function(ECOTOX_filepath,
     # Clean up ECOTOX with function
     print('Running ECOTOX_cleanup_function')
     ECOTOX_clean = ECOTOX_cleanup_function(ECOTOX_database = ECOTOX_filtered_initial, 
-                                           molweights = molweight_dump,
+                                           molweights = molweight_lookup,
                                            ECx_to_NOEC = ECx_to_NOEC,
                                            settings = c('fix species', 'fix molweights'))
     
@@ -196,7 +196,7 @@ function(ECOTOX_filepath,
     ECOTOX_identifiers = data.frame(original_CAS = ECOTOX_unique_cas_fixed)
     
     
-    # Set load of dumpfile or not
+    # Set load of lookupfile or not
     if(rerun){
       
       smiles_function_settings = c('no load', 'query cir')
@@ -209,7 +209,7 @@ function(ECOTOX_filepath,
     
     # Add SMILES from cir/pubchem using add_SMILES function
     ECOTOX_identifiers = QSAR_add_smiles_function(ECOTOX_identifiers, 
-                                                  local_dumpfile = ecotox_cir_dumpfile,
+                                                  local_lookupfile = ecotox_cir_lookupfile,
                                                   settings = smiles_function_settings)
     
     

@@ -76,7 +76,7 @@
 ## Version 7.0 changes
 
 # - Rearranged and improved experimental data filtering and processing
-# - introduced "forced_rerun" to enable running all of the script even though saved dump files exists
+# - introduced "forced_rerun" to enable running all of the script even though saved lookup files exists
 # - defining OECD species at start of script
 
 ## Version 8.0 changes
@@ -105,6 +105,8 @@
 ## Version 12.0 changes
 
 # Added ECx_to_NOEC options
+# Minor changes to file naming, and version control (removed versions from script names)The dataset allows identification of the QSAR model and platform with the highest performance for the chemical class and endpoint of interest.
+# changed output format to tsv (from tab-separated csv)
 
 ################################################################################
 #         0.2. Planned changes and WIP                                         #
@@ -131,7 +133,7 @@
 # The US EPA ECOTOX database as preprocessed by Francis Spilsbury
 #
 #
-# ------'ECOTOX-Term-Appendix-C.csv'--------------------------------------------
+# ------'ECOTOX-Term-Appendix-C.tsv'--------------------------------------------
 #
 # Appendix C from US EPA ECOTOX, containing descriptions of some terms 
 # for the ECOTOX database
@@ -142,13 +144,13 @@
 
 ####### Output files:
 #
-# --------'QSAR_predictions_v[version].csv'-----------------------------------------
+# --------'QSAR_predictions_v[version].tsv'-----------------------------------------
 #
 # The main output of the script. QSAR predictions from the QSAR tools listed above.
 # Wide format, with one row per substance. For more info on contents, see excel
 # sheet with content descriptions in the repository at the start of the script
 #
-# --------'experimental_dataset_v[version].csv'-----------------------------------------
+# --------'experimental_dataset_v[version].tsv'-----------------------------------------
 #
 # A cleaned and curated dataset with empirical data used in the script. Contains
 # data from US EPA ECOTOX (found here: https://cfpub.epa.gov/ecotox/) 
@@ -158,7 +160,7 @@
 # EFSA Supporting Publications, 9(11), 326E.)
 #
 #
-# --------'identifiers_[version].csv'---------------------------------------
+# --------'identifiers_[version].tsv'---------------------------------------
 #
 # A list of all chemical identifiers and some physicochemical data 
 # collected from the original data sources, webchem and PubChem
@@ -168,12 +170,12 @@
 
 ####### Intermediate files:
 #
-# Intermediate/dump files are produced and/or loaded within the script to reduce script
+# Intermediate/lookup files are produced and/or loaded within the script to reduce script
 # times when rerunning the script. In general they contain collected data
 # from various APIs which are generally query-capped. They can take anywhere
 # from a few minutes to half a day to reproduce. 
 # 
-# The repo contains existing dump files, but if you want to
+# The repo contains existing lookup files, but if you want to
 # run a fresh collection, you are advised to move these to a backup folder first.
 #
 #
@@ -185,11 +187,11 @@
 #
 # compound metadata from the ECOTOX database
 #
-# ----"ECOTOX_identifiers_cir_dump.Rda"
+# ----"ECOTOX_identifiers_cir_lookup.Rda"
 #
 # compound metadata from the ECOTOX database post cir_query
 #
-# ----"EFSA_CIR_dump.Rda"
+# ----"EFSA_CIR_lookup.Rda"
 #
 # compound metadata from the EFSA database post cir_query
 #
@@ -208,11 +210,11 @@
 # ----identifiers_11.Rda" 
 #
 # The chemical identifiers and physicochemical data used in the QSAR predictions datbase project 
-# ----"identifiers_cid_dump.Rda" 
+# ----"identifiers_cid_lookup.Rda" 
 #
 # The chemical identifiers used in the QSAR predictions datbase project, post collection of CID 
 # 
-# ----"identifiers_logkow_pka_dump.Rda" 
+# ----"identifiers_logkow_pka_lookup.Rda" 
 #
 # The chemical identifiers used in the QSAR predictions datbase project, post collection of pka and logp (logkow) 
 #
@@ -220,15 +222,15 @@
 #
 # The chemical identifiers used in the QSAR predictions datbase project, post merge 
 #
-# ----"inchikey_dumpfile.Rda" 
+# ----"inchikey_lookupfile.Rda" 
 # 
 # The InChIKeys used in the QSAR predictions datbase project 
 # 
-# ----"logp_dump.Rda" 
+# ----"logp_lookup.Rda" 
 # 
 # A lookup table for collected logp (logkow) 
 #
-# ----"pka_dump.Rda" 
+# ----"pka_lookup.Rda" 
 #
 # A lookup table for collected logp (pka) 
 # 
@@ -305,7 +307,7 @@ input_directory <- 'C:/Git/QSAR_predictions_database/Input'
 # output directory (Main outputs)
 output_directory <- 'C:/Git/QSAR_predictions_database/Output'
 
-# intermediate files directory (Dumpfiles, working files etc)
+# intermediate files directory (lookupfiles, working files etc)
 intermediate_directory <- 'C:/Git/QSAR_predictions_database/Intermediate files'
 
 
@@ -342,8 +344,8 @@ QSAR_subset_reduction_function = dget('Functions/QSAR_subset_reduction_function.
 version = 12
 
 ## Set forced rerun
-# If True   will regenerate all dump-files    (Slow option, has to be done the first time)
-# If False  will use dumpfiles if they exist (Faster option)
+# If True   will regenerate all lookup-files    (Slow option, has to be done the first time)
+# If False  will use lookupfiles if they exist (Faster option)
 forced_rerun = F
 
 ## Set standard species for fish and algae (synonyms on same rows, unique species on new row)
@@ -406,9 +408,9 @@ if(!is.null(EFSA_filepath) & !is.na(EFSA_filepath)){
   # Import EFSA
   EFSA_handle = EFSA_import_function(EFSA_filepath,
                                      version = version,
-                                     rerun = T,
+                                     rerun = F,
                                      filters = EFSA_filters,
-                                     efsa_cir_dumpfile = paste0(intermediate_directory, '/EFSA_CIR_dump.Rda'),
+                                     efsa_cir_lookupfile = paste0(intermediate_directory, '/EFSA_CIR_lookup.Rda'),
                                      ECx_to_NOEC = 'EC10',
                                      settings = NULL)
   
@@ -447,7 +449,7 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
                         settings = NULL)                                # Settings to send to cleanup function
   
   # Set molweights file (if any) for the cleanup function
-  ECOTOX_molweights_file = 'Additional data/molweight_dump.Rda'
+  ECOTOX_molweights_file = 'Additional data/molweight_lookup.Rda'
   
   ## Functions required for ECOTOX import:
   # ECOTOX_cleanup_function = dget('ECOTOX_cleanup_function.R')
@@ -457,10 +459,10 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
   # Import ECOTOX
   ECOTOX_handle = ECOTOX_import_function(ECOTOX_filepath = ECOTOX_filepath,
                                          version = version,
-                                         rerun = T,
+                                         rerun = F,
                                          filters = ECOTOX_filters,
-                                         molweight_dump = ECOTOX_molweights_file,
-                                         paste0(intermediate_directory, '/ECOTOX_identifiers_cir_dump.Rda'),
+                                         molweight_lookup = ECOTOX_molweights_file,
+                                         paste0(intermediate_directory, '/ECOTOX_identifiers_cir_lookup.Rda'),
                                          ECx_to_NOEC = 'EC10',
                                          settings = NULL)
   
@@ -553,7 +555,7 @@ nrow(identifiers)
 identifiers = QSAR_add_inchikey_function(
   identifiers, 
   settings = NULL,
-  local_dumpfile = paste0(intermediate_directory, '/inchikey_dumpfile.Rda'))
+  local_lookupfile = paste0(intermediate_directory, '/inchikey_lookupfile.Rda'))
 
 
 
@@ -708,7 +710,7 @@ j = 0
 identifiers_backup = identifiers
 
 # This part was rewritten to be a for loop instead of apply since the limiting factor isnt R's speed issues with for loops, but the API
-if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))){
+if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))){
   
   # Add CID as all NA to identifiers
   identifiers$CID = NA
@@ -733,13 +735,13 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda
     # In this loop we save every 10 times we add a new CID due to the volatility of the API
     if(j %% 10 == 0){
       print(paste0('Saving progress. Row number ', i))
-      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
     }
     
     # Save a final time upon completion
     if(i == nrow(identifiers)){
       print('Collection finished, saving...')
-      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
     }
     
     j = j + 1
@@ -749,15 +751,15 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda
   
   
 } else {
-  # If we have a dumpfile/backup we do things differently
+  # If we have a lookupfile/backup we do things differently
   
   # Do a little jig to avoid overwriting
   temp_identifiers =  identifiers
   
-  # Get the dumpfile/backup
-  load(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
+  # Get the lookupfile/backup
+  load(file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
   
-  # Rename dumpfile identifiers
+  # Rename lookupfile identifiers
   old_identifiers =  identifiers
   
   # take our current identifiers back
@@ -766,7 +768,7 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda
   # Remove current identifiers CID
   identifiers$CID = NULL
   
-  # Add CID from dumpfile identifiers
+  # Add CID from lookupfile identifiers
   identifiers = merge(identifiers, old_identifiers[,c("original_CAS", 'CID')], by = 'original_CAS', all.x = T)
   
   for(i in 1:nrow(identifiers)){
@@ -786,12 +788,12 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda
     # In this loop we save every 10 times we add a new CID due to the volatility of the API
     if(j %% 10 == 0){
       print(paste0('Saving progress. Row number ', i))
-      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
     }
     
     if(i == nrow(identifiers)){
       print('Collection finished, saving...')
-      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
+      save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
     }
     
     j = j + 1
@@ -811,7 +813,7 @@ sum(is.na(identifiers$CID))
 print(identifiers[is.na(identifiers$CID),"original_CAS"])
 
 
-# # This part needs to be run once per new iteration of the dump file, add more as needed
+# # This part needs to be run once per new iteration of the lookup file, add more as needed
 # identifiers[identifiers$original_CAS == "110488-70-5", 'CID'] = '5889665'
 # identifiers[identifiers$original_CAS == "16752-77-5", 'CID'] = '5353758'
 # identifiers[identifiers$original_CAS == "11141-17-6", 'CID'] = '5281303'
@@ -870,8 +872,8 @@ print(identifiers[is.na(identifiers$CID),"original_CAS"])
 sum(is.na(identifiers$CID))
 print(identifiers[is.na(identifiers$CID),"original_CAS"])
 
-save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
-# load(file = paste0(intermediate_directory, '/identifiers_cid_dump.Rda'))
+save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
+# load(file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
 
 
 ### Get logp and pka
@@ -881,10 +883,10 @@ logp_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = N
 pka_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = NA, 'SourceID' = NA)
 
 # If we have run this script before we load the output
-if(file.exists(paste0(intermediate_directory, '/logp_dump.Rda')) & file.exists(paste0(intermediate_directory, '/pka_dump.Rda'))){
+if(file.exists(paste0(intermediate_directory, '/logp_lookup.Rda')) & file.exists(paste0(intermediate_directory, '/pka_lookup.Rda'))){
   
-  load(file = paste0(intermediate_directory, '/logp_dump.Rda'))
-  load(file = paste0(intermediate_directory, '/pka_dump.Rda'))
+  load(file = paste0(intermediate_directory, '/logp_lookup.Rda'))
+  load(file = paste0(intermediate_directory, '/pka_lookup.Rda'))
   
 }
 
@@ -938,8 +940,8 @@ for(i in 1:nrow(identifiers)){
   # Every one hundred compounds we save the results
   if(i %% 100 == 0){
     
-    save(logp_frame, file = paste0(intermediate_directory, '/logp_dump.Rda'))
-    save(pka_frame, file = paste0(intermediate_directory, '/pka_dump.Rda'))
+    save(logp_frame, file = paste0(intermediate_directory, '/logp_lookup.Rda'))
+    save(pka_frame, file = paste0(intermediate_directory, '/pka_lookup.Rda'))
     
   }
   
@@ -948,8 +950,8 @@ for(i in 1:nrow(identifiers)){
 # Drop the NA rows in the beginning and do a last save
 logp_frame = logp_frame[rowSums(is.na(logp_frame)) != ncol(logp_frame),]
 pka_frame = pka_frame[rowSums(is.na(pka_frame)) != ncol(pka_frame),]
-save(logp_frame, file = paste0(intermediate_directory, '/logp_dump.Rda'))
-save(pka_frame, file = paste0(intermediate_directory, '/pka_dump.Rda'))
+save(logp_frame, file = paste0(intermediate_directory, '/logp_lookup.Rda'))
+save(pka_frame, file = paste0(intermediate_directory, '/pka_lookup.Rda'))
 
 
 
@@ -963,7 +965,7 @@ identifiers$pka = NA
 temp_logp_fix_by_hand = list()
 
 
-if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_dump.Rda')) | forced_rerun){
+if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_lookup.Rda')) | forced_rerun){
   
   for(i in 1:nrow(identifiers)){  
     
@@ -1274,11 +1276,11 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_d
   # 2,3,4,5-Tetrachlorophenol pKa=6.35 Hazardous Substances Data Bank (HSDB)     6765
   identifiers[identifiers$CID == '21013', "pka"] = '6.35'
   
-  save(identifiers, file = paste0(intermediate_directory, '/identifiers_logkow_pka_dump.Rda'))
+  save(identifiers, file = paste0(intermediate_directory, '/identifiers_logkow_pka_lookup.Rda'))
   
 } else {
   
-  load(file = paste0(intermediate_directory, '/identifiers_logkow_pka_dump.Rda'))
+  load(file = paste0(intermediate_directory, '/identifiers_logkow_pka_lookup.Rda'))
   
 }
 
@@ -1620,11 +1622,11 @@ QSAR_all_wide = cbind(QSAR_all_wide[,meta_coln_id], QSAR_all_wide[,ecosar_raw_co
 
 ## QSAR prediction data
 
-# Save the wide format dataframe in tab separated csv
-write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
+# Save the wide format dataframe in tab separated tsv
+write.table(QSAR_all_wide, file = paste0(output_directory, '/QSAR_predictions_v', version, '.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-# QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_predictions_v', version, '.csv'), sep = '\t')
+# QSAR_all_wide_new = fread(file = paste0(output_directory, '/QSAR_predictions_v', version, '.tsv'), sep = '\t')
 
 
 ## Identifiers
@@ -1651,10 +1653,10 @@ for(i in 1:ncol(identifiers)){
 }
 
 # Save identifiers and physicochemical information in output folder
-write.table(identifiers, file = paste0(output_directory, '/identifiers_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
+write.table(identifiers, file = paste0(output_directory, '/identifiers_v', version, '.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-# identifiers_new = fread(file = paste0(output_directory, '/identifiers_v', version, '.csv'), sep = '\t')
+# identifiers_new = fread(file = paste0(output_directory, '/identifiers_v', version, '.tsv'), sep = '\t')
 
 # Note that there are some compounds from the original empirical data for which we have no QSAR predictions
 identifiers_missing_predictions = identifiers[!identifiers$original_CAS %in% QSAR_all_wide$META_original_CAS,]
@@ -1684,10 +1686,10 @@ for(i in 1:ncol(experimental_dataset)){
 }
 
 # Save empirical data in output folder
-write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset_v', version, '.csv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
+write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset_v', version, '.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-# experimental_dataset_new = fread(file = paste0(output_directory, '/experimental_dataset_v', version, '.csv'), sep = '\t')
+# experimental_dataset_new = fread(file = paste0(output_directory, '/experimental_dataset_v', version, '.tsv'), sep = '\t')
 
 # Remove any double checked files
 rm(list = ls()[grep("new$", ls())])

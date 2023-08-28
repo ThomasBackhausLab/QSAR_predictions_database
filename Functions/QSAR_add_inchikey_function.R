@@ -1,6 +1,6 @@
 ################################################################################
 #    A function for adding InChIKeys cir_query and                             #
-#           a local dump file                                                  #
+#           a local lookup file                                                  #
 ################################################################################
 #
 # Original author: Patrik Svedberg
@@ -39,7 +39,7 @@
 
 
 function(identifiers_database,
-         local_dumpfile = NULL,
+         local_lookupfile = NULL,
          settings = NULL){
   
   
@@ -60,71 +60,71 @@ function(identifiers_database,
   } 
   
   
-  ### FIX DUMPFILE STUFFFFS
+  ### FIX lookupFILE STUFFFFS
   
   
-  # How to handle local dumpfile loading
-  if('ignore dumpfile' %in% tolower(settings) | tolower(settings) == 'ignore dumpfile'){
+  # How to handle local lookupfile loading
+  if('ignore lookupfile' %in% tolower(settings) | tolower(settings) == 'ignore lookupfile'){
     
-    print('Ignoring local dumpfile, no load')
-    load_dumpfile = F
+    print('Ignoring local lookupfile, no load')
+    load_lookupfile = F
     
   } else if('no load' %in% tolower(settings) | tolower(settings) == 'no load'){
     
-    print('Not loading local dumpfile')
-    load_dumpfile = F
+    print('Not loading local lookupfile')
+    load_lookupfile = F
     
-  } else if(is.null(local_dumpfile)){
+  } else if(is.null(local_lookupfile)){
     
-    print('No local dumpfile provided')
-    load_dumpfile = F
+    print('No local lookupfile provided')
+    load_lookupfile = F
     
-  } else if(!is.null(local_dumpfile) & !file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & !file.exists(local_lookupfile)){
     
-    print('Local dumpfile doesnt exist')
-    load_dumpfile = F
+    print('Local lookupfile doesnt exist')
+    load_lookupfile = F
     
-  } else if(!is.null(local_dumpfile) & file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & file.exists(local_lookupfile)){
     
-    print('Local dumpfile exists, loading')
-    load_dumpfile = T
+    print('Local lookupfile exists, loading')
+    load_lookupfile = T
     
   } else {
     
-    print('Local dumpfile error, check code/coder and retry')
+    print('Local lookupfile error, check code/coder and retry')
     return(FALSE)
   }
   
-  # How to handle local dumpfile saving
-  if('ignore dumpfile' %in% tolower(settings) | tolower(settings) == 'ignore dumpfile'){
+  # How to handle local lookupfile saving
+  if('ignore lookupfile' %in% tolower(settings) | tolower(settings) == 'ignore lookupfile'){
     
-    save_dumpfile = F
+    save_lookupfile = F
     
   } else if('no save' %in% tolower(settings) | tolower(settings) == 'no save'){
   
-    print('Not saving local dumpfile')
-    save_dumpfile = F
+    print('Not saving local lookupfile')
+    save_lookupfile = F
   
-  } else if(is.null(local_dumpfile)){
+  } else if(is.null(local_lookupfile)){
     
-    save_dumpfile = F
+    save_lookupfile = F
       
-  } else if(!is.null(local_dumpfile) & !file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & !file.exists(local_lookupfile)){
     
-    print(paste0('Local dumpfile will be saved as: ', local_dumpfile))
+    print(paste0('Local lookupfile will be saved as: ', local_lookupfile))
     
-    save_dumpfile = T
+    save_lookupfile = T
     
   
     
-  } else if(!is.null(local_dumpfile) & file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & file.exists(local_lookupfile)){
     
-    print(paste0('Local dumpfile will be saved as: ', local_dumpfile))
-    save_dumpfile = T
+    print(paste0('Local lookupfile will be saved as: ', local_lookupfile))
+    save_lookupfile = T
     
   } else {
     
-    print('Local dumpfile error, check code/coder and retry')
+    print('Local lookupfile error, check code/coder and retry')
     return(FALSE)
     
   } 
@@ -137,7 +137,7 @@ function(identifiers_database,
   ################################################################################
   
   
-  if(!load_dumpfile){
+  if(!load_lookupfile){
     
     # Add InChIKey if there is none, using cir_query
     
@@ -193,9 +193,9 @@ function(identifiers_database,
       get(ls()[ls() != "fileName"])
     }
     
-    dump_file = loadRData(local_dumpfile)
+    lookup_file = loadRData(local_lookupfile)
     
-    identifiers_database = merge(identifiers_database, dump_file[,c('original_CAS', 'InChIKey')], by = 'original_CAS', all.x = T)
+    identifiers_database = merge(identifiers_database, lookup_file[,c('original_CAS', 'InChIKey')], by = 'original_CAS', all.x = T)
     
     identifiers_database = identifiers_database[rowSums(is.na(identifiers_database)) != ncol(identifiers_database), ]
     
@@ -207,7 +207,7 @@ function(identifiers_database,
       
       current_smiles = identifiers_database[i, "original_SMILES"]
       
-      print('InChIKey not in dumpfile, querying CIR')
+      print('InChIKey not in lookupfile, querying CIR')
       
       # Clear tempicnhi to avoid duplicates being saved
       temp_inchi = NA
@@ -253,9 +253,9 @@ function(identifiers_database,
     
   }
   
-  if(save_dumpfile){
+  if(save_lookupfile){
     
-    save(identifiers_database, file = local_dumpfile)
+    save(identifiers_database, file = local_lookupfile)
     
   }
   

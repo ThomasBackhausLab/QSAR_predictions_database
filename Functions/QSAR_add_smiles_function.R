@@ -1,6 +1,6 @@
 ################################################################################
 #    A function for adding SMILES from CAS using cir_query and                 #
-#           a local dump file                                                  #
+#           a local lookup file                                                  #
 ################################################################################
 #
 # Original author: Patrik Svedberg
@@ -43,7 +43,7 @@
 ################################################################################
 
 function(identifiers_database,
-         local_dumpfile = NULL,
+         local_lookupfile = NULL,
          settings = NULL){
 
   
@@ -84,66 +84,66 @@ function(identifiers_database,
     library(webchem)
   }
   
-  # How to handle local dumpfile loading
-  if('ignore dumpfile' %in% tolower(settings) | tolower(settings) == 'ignore dumpfile'){
+  # How to handle local lookupfile loading
+  if('ignore lookupfile' %in% tolower(settings) | tolower(settings) == 'ignore lookupfile'){
     
-    print('Settings: Ignoring local dumpfile, no load')
-    load_dumpfile = F
+    print('Settings: Ignoring local lookupfile, no load')
+    load_lookupfile = F
     
   } else if('no load' %in% tolower(settings) | tolower(settings) == 'no load'){
     
-    print('Settings: Not loading local dumpfile')
-    load_dumpfile = F
+    print('Settings: Not loading local lookupfile')
+    load_lookupfile = F
     
-  } else if(!is.null(local_dumpfile) & !file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & !file.exists(local_lookupfile)){
     
-    print('Local dumpfile doesnt exist')
-    load_dumpfile = F
+    print('Local lookupfile doesnt exist')
+    load_lookupfile = F
     
-  } else if(is.null(local_dumpfile)){
+  } else if(is.null(local_lookupfile)){
     
-    print('Settings: No local dumpfile provided')
-    load_dumpfile = F
+    print('Settings: No local lookupfile provided')
+    load_lookupfile = F
     
-  } else if(!is.null(local_dumpfile) & file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & file.exists(local_lookupfile)){
     
-    print('Settings: Local dumpfile exists, loading')
-    load_dumpfile = T
+    print('Settings: Local lookupfile exists, loading')
+    load_lookupfile = T
     
   } else {
     
-    print('Local dumpfile error, check code/coder and retry')
+    print('Local lookupfile error, check code/coder and retry')
     return(FALSE)
   }
   
-  # How to handle local dumpfile saving
-  if('ignore dumpfile' %in% tolower(settings) | tolower(settings) == 'ignore dumpfile'){
+  # How to handle local lookupfile saving
+  if('ignore lookupfile' %in% tolower(settings) | tolower(settings) == 'ignore lookupfile'){
     
-    save_dumpfile = F
+    save_lookupfile = F
     
   } else if('no save' %in% tolower(settings) | tolower(settings) == 'no save'){
     
-    print('Settings: Not saving local dumpfile')
-    save_dumpfile = F
+    print('Settings: Not saving local lookupfile')
+    save_lookupfile = F
     
-  } else if(!is.null(local_dumpfile) & !file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & !file.exists(local_lookupfile)){
     
-    print(paste0('Settings: Local dumpfile will be saved as: ', local_dumpfile))
+    print(paste0('Settings: Local lookupfile will be saved as: ', local_lookupfile))
     
-    save_dumpfile = T
+    save_lookupfile = T
     
-  } else if(is.null(local_dumpfile)){
+  } else if(is.null(local_lookupfile)){
     
-    save_dumpfile = F
+    save_lookupfile = F
     
-  } else if(!is.null(local_dumpfile) & file.exists(local_dumpfile)){
+  } else if(!is.null(local_lookupfile) & file.exists(local_lookupfile)){
     
-    print(paste0('Settings: Local dumpfile will be saved as: ', local_dumpfile))
-    save_dumpfile = T
+    print(paste0('Settings: Local lookupfile will be saved as: ', local_lookupfile))
+    save_lookupfile = T
     
   } else {
     
-    print('Local dumpfile error, check code/coder and retry')
+    print('Local lookupfile error, check code/coder and retry')
     return(FALSE)
     
   } 
@@ -156,19 +156,19 @@ function(identifiers_database,
   ################################################################################
 
   ################################################################################
-  # 2.1 processing dumpfile, input smiles etc
+  # 2.1 processing lookupfile, input smiles etc
   ################################################################################
   
   
-  # If we load a dump_file, do that first
-  if(load_dumpfile){
+  # If we load a lookup_file, do that first
+  if(load_lookupfile){
     
-    print('Loading local dumpfile')
-    dump_file = get(load(local_dumpfile))
+    print('Loading local lookupfile')
+    lookup_file = get(load(local_lookupfile))
   
   } else {
     
-    dump_file = NULL
+    lookup_file = NULL
     
   }
   
@@ -182,19 +182,19 @@ function(identifiers_database,
     
   }
   
-  # Merge if there is a dumpfile, else add NAs
-  if(!is.null(dump_file)){
+  # Merge if there is a lookupfile, else add NAs
+  if(!is.null(lookup_file)){
   
-    out_file = merge(out_file, dump_file[,c('original_CAS', 'original_SMILES')], by = 'original_CAS', all.x = T)  
+    out_file = merge(out_file, lookup_file[,c('original_CAS', 'original_SMILES')], by = 'original_CAS', all.x = T)  
     
   } 
   
-  # If both dumpfile and input smiles were used, fix the merger issues
+  # If both lookupfile and input smiles were used, fix the merger issues
   if("original_SMILES.x" %in% colnames(out_file) & "original_SMILES.y" %in% colnames(out_file)){
     
     out_file$original_SMILES = out_file$original_SMILES.y
     
-    # Use x (input SMILES) if there are both input and local_dumpfile SMILES
+    # Use x (input SMILES) if there are both input and local_lookupfile SMILES
     out_file$original_SMILES[!is.na(out_file$original_SMILES.x)] = out_file$original_SMILES.x[!is.na(out_file$original_SMILES.x)]
     
     # Remove the .x and .y columns
@@ -678,17 +678,17 @@ function(identifiers_database,
   # Make sure all output is present in the input
   out_file = out_file[out_file$original_CAS %in% identifiers_database$original_CAS,]
   
-  # If we save a dumpfile, do that now
-  if(save_dumpfile){
+  # If we save a lookupfile, do that now
+  if(save_lookupfile){
     
-    # Add new entries to dump_file
-    dump_file = distinct(rbind(dump_file[,c("original_CAS", "original_SMILES")], out_file))
+    # Add new entries to lookup_file
+    lookup_file = distinct(rbind(lookup_file[,c("original_CAS", "original_SMILES")], out_file))
     
-    # Remove all NA smiles from dumpfile
-    dump_file = dump_file[!is.na(dump_file$original_SMILES),]
+    # Remove all NA smiles from lookupfile
+    lookup_file = lookup_file[!is.na(lookup_file$original_SMILES),]
     
-    # save dump_file
-    save(dump_file, file = local_dumpfile)
+    # save lookup_file
+    save(lookup_file, file = local_lookupfile)
     
   } 
   

@@ -61,14 +61,14 @@ function(ECOTOX_ascii_path,
   
   on.exit(setwd(original_wd))
   
-  save_dump = F
+  save_lookup = F
   if(is.null(settings)){
     
     print('No additional settings provided')
     
   } else if(!is.null(settings) & (settings == 'save' | 'save' %in% settings)){
     
-    save_dump = T
+    save_lookup = T
     
     outwd <- "C:/Git/QSAR_predictions_database/Output"
   }
@@ -346,7 +346,7 @@ function(ECOTOX_ascii_path,
   # by obs_duration_unit
   ECOTOX<-merge(ECOTOX,TimeUnitLookup_4, by="obs_duration_unit", all.x=TRUE)
   
-  if(save_dump){
+  if(save_lookup){
     
     #save dataframe
     save(ECOTOX,file=paste0(outwd,"/ECOTOX", " ", database_timestamp," v",vers,".Rda"))

@@ -49,7 +49,7 @@ function(EFSA_filepath,
                         'active substance' = 'active substance',
                         'salts' = '\\.',
                         'medium' = 'freshwater'),
-         efsa_cir_dumpfile = paste0(intermediate_directory, '/EFSA_CIR_dump.Rda'),
+         efsa_cir_lookupfile = paste0(intermediate_directory, '/EFSA_CIR_lookup.Rda'),
          ECx_to_NOEC = NULL,
          settings = NULL){
   
@@ -70,7 +70,7 @@ function(EFSA_filepath,
     print('No additional settings provided')
   }
 
-  # Handling of cached/dump-files
+  # Handling of cached/lookup-files
   load_cache_file = F
   if(rerun){
     
@@ -155,7 +155,7 @@ function(EFSA_filepath,
     # Get all unique CAS
     EFSA_unique_cas = data.frame('original_CAS' = unique(EFSA_clean$CASNO))
     
-    # Set load of dumpfile or not
+    # Set load of lookupfile or not
     if(rerun){
       
       smiles_function_settings = c('no load', 'query cir')
@@ -169,7 +169,7 @@ function(EFSA_filepath,
     # Run function to get SMILES for EFSA
     # and make new dataframe with identifiers
     EFSA_identifiers = QSAR_add_smiles_function(identifiers_database = EFSA_unique_cas, 
-                                                local_dumpfile = efsa_cir_dumpfile,
+                                                local_lookupfile = efsa_cir_lookupfile,
                                                 settings = smiles_function_settings)
     
     # Add smiles from the identifiers frame to the original EFSA frame

@@ -146,10 +146,10 @@ function(ECOTOX_database,
     # if conc1_unit contain any molar unit, collect molweights from webchem
     ECOTOX_unique_cas = unique(ECOTOX_database$cas_number)
     
-    # Add molweights (skipped if we have a molweight dump file, ran if we force a rerun)
+    # Add molweights (skipped if we have a molweight lookup file, ran if we force a rerun)
     if(mol_type != 'file'){
       
-      # If we have manually loaded the molweight dump file we use that as a basis to avoid overusing cir_query
+      # If we have manually loaded the molweight lookup file we use that as a basis to avoid overusing cir_query
       if(mol_type == 'dataframe'){
         
         ECOTOX_database$molweight = NULL
@@ -188,7 +188,7 @@ function(ECOTOX_database,
           
         }
         
-        molweight_dump = distinct(ECOTOX_database[!is.na(ECOTOX_database$molweight), c("cas_number", "molweight")])
+        molweight_lookup = distinct(ECOTOX_database[!is.na(ECOTOX_database$molweight), c("cas_number", "molweight")])
         
         print('Save molweights reference? - "no" or filename')
         temp_input = readlines()
@@ -196,7 +196,7 @@ function(ECOTOX_database,
         if(tolower(temp_input) != 'no'){
           
           print(paste0('Saving molweight reference as ', temp_input))
-          save(molweight_dump, file = temp_input)
+          save(molweight_lookup, file = temp_input)
           
         } else {
           
@@ -219,7 +219,7 @@ function(ECOTOX_database,
       
       ECOTOX_database$molweight = NULL
       
-      ECOTOX_database = merge(ECOTOX_database, molweight_dump, by = 'cas_number', all.x = T)
+      ECOTOX_database = merge(ECOTOX_database, molweight_lookup, by = 'cas_number', all.x = T)
       
       if(molweight_search){
         
@@ -247,9 +247,9 @@ function(ECOTOX_database,
           
         }
         
-        molweight_dump = distinct(ECOTOX_database[!is.na(ECOTOX_database$molweight), c("cas_number", "molweight")])
+        molweight_lookup = distinct(ECOTOX_database[!is.na(ECOTOX_database$molweight), c("cas_number", "molweight")])
         
-        save(molweight_dump, file = molweights)
+        save(molweight_lookup, file = molweights)
         
       } else {
         

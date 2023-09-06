@@ -341,7 +341,7 @@ function(identifiers,
         You will end up in the tab "Organic Molecule".
         Click the "Batch" button on the right side of the ECOSAR window. Click "Load" on the right side.
         A file browser will open. Navigate to your identifiers-file (should be in', paste0(working_directory, '/identifiers/'), 
-        'ECOSAR accepts both SMILES and CAS, but here we use SMILES.
+        ') ECOSAR accepts both SMILES and CAS, but here we use SMILES.
         Note that if you are running this script for more than 1000 compoinds, you will have SMILES-files with names like SMILES_1to1000 and so on until SMILES_X001toEnd.
         ECOSAR is very slow with large datasets, and speed is improved by running smaller batches - you will need to run this for each of the files.
         Select the file you want to use, and click "open".

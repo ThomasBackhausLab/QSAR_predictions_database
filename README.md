@@ -7,15 +7,21 @@ These scripts may be used under the Creative Commons Attribution-NonCommercial (
 
 ## Below follows a short guide to using the script
 
-QSAR_data_collection_script_v11.R is the main script used to produce the dataset. It calls a number of helper functions, located under the subfolder “Functions”. The main script handles directory management and packages, standardization and merging of empirical data, extraction of identifiers from empirical data, gathering of physicochemical properties, output data formatting and output data export.
+QSAR_data_collection_script.R is the main script used to produce the dataset. It calls a number of helper functions, located under the subfolder “Functions”. The main script handles directory management and packages, standardization and merging of empirical data, extraction of identifiers from empirical data, gathering of physicochemical properties, output data formatting and output data export.
 
 Specific functions are called for import of empirical data, cleaning and filtering of empirical data, collection of SMILES and InChIKeys, running QSAR platforms, importing and curating QSAR outputs and calculating compounded QSAR predictions. A full list of function files and a short description of their uses can be found below.
 
 A handful of intermediate files are created by the script to reduce the load on third party APIs and to avoid rerunning time consuming steps of the script, unless instructed to. These files can be found under the “Intermediate files” folder. A full list of intermediate files and a short description of their purpose can be found below.
 
-The script was written (and is functional) in R version 4.1.3 using the RStudio editor version 2022.12.0 Build 353
+To run the script, first you need to install and load the required packages, and specify certain paths (working directories, QSAR directories, empirical data locations and QSAR tool executables), finally the functions should be imported and a few key parameters should be set. All of this is done in the main script under "1. Packages, working directories and housekeeping".
 
-###The main script and all helper functions rely on the following R-packages:
+The script should then be run section by section, with additional user interaction needed for running the QSAR tools.
+
+The QSAR tools are launched by the script, but the tools needs to be run by the user, with instructions available through the script. If the user need additional help running the QSAR platforms, please find the documentation for each tool from their corresponding developers.
+
+The script was written in R version 4.1.3 using the RStudio editor version 2022.12.0 Build 353
+
+## The main script and all helper functions rely on the following R-packages:
 
 |Package|Version
 |-----------|------------|
@@ -27,12 +33,37 @@ The script was written (and is functional) in R version 4.1.3 using the RStudio 
 |webchem         |1.1.3|
 |readxl          |1.4.0|
 
+## The script uses data from the following sources:
 
 The empirical dataset contains data from the following sources:
 US EPA ECOTOX [1] ASCII-file direct link:
 https://gaftp.epa.gov/ecotox/ecotox_ascii_09_15_2022.zip
 EFSA pesticide report [2]:
 Pierobon, E., Neri, M. C., Marroncelli, S., & Croce, V. (2012). Completion of data entry of pesticide ecotoxicology Tier 1 study endpoints in a XML schema–database. EFSA Supporting Publications, 9(11), 326E
+
+In addition the following file is needed:
+"ECOTOX-Term-Appendix-C.csv"" available at:
+https://cfpub.epa.gov/ecotox/help.cfm?sub=term-appendix#
+Navigate to Appendix C, and "Export as..." to download the CSV version of the file
+
+
+## The script uses the following QSAR tools:
+
+### ECOSAR
+ECOSAR 2.2 [5] application available at:
+https://www.epa.gov/tsca-screening-tools/ecological-structure-activity-relationships-ecosar-predictive-model
+
+### VEGA
+VEGA 1.1.5 [6] application available at:
+https://www.vegahub.eu/portfolio-item/vega-qsar/
+
+
+### Toxicity Estimation Software Tool (T.E.S.T.)
+T.E.S.T. 5.1.1.0 [7] application available at:
+https://www.epa.gov/chemical-research/toxicity-estimation-software-tool-test
+
+
+
 
 ## Function files:
 |Function|Description|
@@ -52,22 +83,22 @@ Pierobon, E., Neri, M. C., Marroncelli, S., & Croce, V. (2012). Completion of da
 ## Intermediate files:
 |File|Description|
 |-----------|------------|
-|"ECOTOX_filtered_11.Rda"                       |the ECOTOX database post building, cleanup and filtering|
-|"ECOTOX_identifiers_11.Rda"                    |compound metadata from the ECOTOX database|
-|"ECOTOX_identifiers_cir_dump.Rda"              |compound metadata from the ECOTOX database post cir_query|
-|"EFSA_CIR_dump.Rda"                            |compound metadata from the EFSA database post cir_query|
-|"EFSA_filtered_11.Rda"                         |the EFSA database post cleanup and filtering|
-|"EFSA_identifiers_11.Rda"                      |compound metadata from the EFSA database|
-|"experimental_dataset_post_merge_v11.Rda"      |The merged empirical data|
-|"identifiers_11.Rda"                           |The chemical identifiers and physicochemical data used in the QSAR predictions datbase project|
-|"identifiers_cid_dump.Rda"                     |The chemical identifiers used in the QSAR predictions datbase project, post collection of CID|
-|"identifiers_logkow_pka_dump.Rda"              |The chemical identifiers used in the QSAR predictions datbase project, post collection of pka and logp (logkow)|
-|"identifiers_post_merge_v11.Rda"               |The chemical identifiers used in the QSAR predictions datbase project, post merge|
-|"inchikey_dumpfile.Rda"                        |The InChIKeys used in the QSAR predictions datbase project|
-|"logp_dump.Rda"                                |A lookup table for collected logp (logkow)|
-|"pka_dump.Rda"                                 |A lookup table for collected logp (pka)|
-|"QSAR_all_processec_v11.Rda"                   |A backup of the processed QSAR predictions, long format|
-|"qsar_data_11.Rda"                             |A backup of the "raw" QSAR predictions, long format|
+|"ECOTOX_filtered_12.Rda"                       |the ECOTOX database post building, cleanup and filtering|
+|"ECOTOX_identifiers_12.Rda"                    |compound metadata from the ECOTOX database|
+|"ECOTOX_identifiers_cir_lookup.Rda"              |compound metadata from the ECOTOX database post cir_query|
+|"EFSA_CIR_lookup.Rda"                            |compound metadata from the EFSA database post cir_query|
+|"EFSA_filtered_12.Rda"                         |the EFSA database post cleanup and filtering|
+|"EFSA_identifiers_12.Rda"                      |compound metadata from the EFSA database|
+|"experimental_dataset_post_merge_v12.Rda"      |The merged empirical data|
+|"identifiers_12.Rda"                           |The chemical identifiers and physicochemical data used in the QSAR predictions datbase project|
+|"identifiers_cid_lookup.Rda"                     |The chemical identifiers used in the QSAR predictions datbase project, post collection of CID|
+|"identifiers_logkow_pka_lookup.Rda"              |The chemical identifiers used in the QSAR predictions datbase project, post collection of pka and logp (logkow)|
+|"identifiers_post_merge_v12.Rda"               |The chemical identifiers used in the QSAR predictions datbase project, post merge|
+|"inchikey_lookupfile.Rda"                        |The InChIKeys used in the QSAR predictions datbase project|
+|"logp_lookup.Rda"                                |A lookup table for collected logp (logkow)|
+|"pka_lookup.Rda"                                 |A lookup table for collected logp (pka)|
+|"QSAR_all_processec_v12.Rda"                   |A backup of the processed QSAR predictions, long format|
+|"qsar_data_12.Rda"                             |A backup of the "raw" QSAR predictions, long format|
 
 
 

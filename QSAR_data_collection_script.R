@@ -11,9 +11,9 @@
 #
 # Based on the output of QSAR models:
 # 
-# Vega 1.1.5 LC50/EC50/NOEC models
-# ECOSAR 2.2
-# T.E.S.T 5.1.1.0
+# Vega 1.1.5        LC50/EC50/NOEC models
+# ECOSAR 2.2        All models
+# T.E.S.T 5.1.1.0   Daphnia magna and Fathead minnow consensus models
 # 
 # And the empirical databases ECOTOX from the US EPA and the EFSA pesticides
 # dataset
@@ -33,11 +33,10 @@
 #   2.1. Importing and filtering EFSA
 #   2.2. Importing and filtering USEPA ECOTOX
 #   2.3. Merge data and identifiers
-#   2.4. Add chemical properties
-# 3. Running QSARs
-#   3.1. Calculate metadata on QSAR predictions
-#   3.2. Fix ECOSAR ChV -> NOEC
-# 4. calculating mean/low of "quality" predictions
+#   2.4. Final cleanup of experimental data
+#   2.5. Add chemical properties to identifiers frame
+# 3. 3. Running QSAR_processing
+# 4. calculating aggregated prediction for QSAR platforms
 #   4.1. Reformatting data to wide format "big QSAR database"
 #   4.2. Exporting output data
 #
@@ -102,11 +101,12 @@
 # Restructured script and cleaned up annotations
 
 
-## Version 12.0 changes
+## Version 12.0 changes (release version!)
 
 # Added ECx_to_NOEC options
-# Minor changes to file naming, and version control (removed versions from script names)The dataset allows identification of the QSAR model and platform with the highest performance for the chemical class and endpoint of interest.
+# Minor changes to file naming, and version control (removed versions from script names)
 # changed output format to tsv (from tab-separated csv)
+# Made minor changes to documentation
 
 ################################################################################
 #         0.2. Planned changes and WIP                                         #
@@ -144,13 +144,13 @@
 
 ####### Output files:
 #
-# --------'QSAR_predictions_v[version].tsv'-----------------------------------------
+# --------'QSAR_predictions.tsv'-----------------------------------------
 #
 # The main output of the script. QSAR predictions from the QSAR tools listed above.
 # Wide format, with one row per substance. For more info on contents, see excel
 # sheet with content descriptions in the repository at the start of the script
 #
-# --------'experimental_dataset_v[version].tsv'-----------------------------------------
+# --------'experimental_dataset.tsv'-----------------------------------------
 #
 # A cleaned and curated dataset with empirical data used in the script. Contains
 # data from US EPA ECOTOX (found here: https://cfpub.epa.gov/ecotox/) 
@@ -160,7 +160,7 @@
 # EFSA Supporting Publications, 9(11), 326E.)
 #
 #
-# --------'identifiers_[version].tsv'---------------------------------------
+# --------'identifiers.tsv'---------------------------------------
 #
 # A list of all chemical identifiers and some physicochemical data 
 # collected from the original data sources, webchem and PubChem
@@ -179,11 +179,11 @@
 # run a fresh collection, you are advised to move these to a backup folder first.
 #
 #
-# ----"ECOTOX_filtered_11.Rda", 
+# ----"ECOTOX_filtered_12.Rda", 
 # 
 # the ECOTOX database post building, cleanup and filtering
 #
-# ----"ECOTOX_identifiers_11.Rda"
+# ----"ECOTOX_identifiers_12.Rda"
 #
 # compound metadata from the ECOTOX database
 #
@@ -195,19 +195,19 @@
 #
 # compound metadata from the EFSA database post cir_query
 #
-# ----"EFSA_filtered_11.Rda"
+# ----"EFSA_filtered_12.Rda"
 #
 # the EFSA database post cleanup and filtering
 #
-# ----"EFSA_identifiers_11.Rda"
+# ----"EFSA_identifiers_12.Rda"
 #
 # compound metadata from the EFSA database
 #
-# ----"experimental_dataset_post_merge_v11.Rda"
+# ----"experimental_dataset_post_merge_v12.Rda"
 #
 # The merged empirical data
 #
-# ----identifiers_11.Rda" 
+# ----identifiers_12.Rda" 
 #
 # The chemical identifiers and physicochemical data used in the QSAR predictions datbase project 
 # ----"identifiers_cid_lookup.Rda" 
@@ -218,7 +218,7 @@
 #
 # The chemical identifiers used in the QSAR predictions datbase project, post collection of pka and logp (logkow) 
 #
-# ----"identifiers_post_merge_v11.Rda" 
+# ----"identifiers_post_merge_v12.Rda" 
 #
 # The chemical identifiers used in the QSAR predictions datbase project, post merge 
 #
@@ -234,11 +234,11 @@
 #
 # A lookup table for collected logp (pka) 
 # 
-# ----"QSAR_all_processec_v11.Rda" 
+# ----"QSAR_all_processec_v12.Rda" 
 #
 # A backup of the processed QSAR predictions, long format 
 #
-# ----"qsar_data_11.Rda" 
+# ----"qsar_data_12.Rda" 
 #
 # A backup of the "raw" QSAR predictions, long format
 #
@@ -344,7 +344,7 @@ QSAR_subset_reduction_function = dget('Functions/QSAR_subset_reduction_function.
 version = 12
 
 ## Set forced rerun
-# If True   will regenerate all lookup-files    (Slow option, has to be done the first time)
+# If True   will regenerate all lookupfiles    (Slow option, has to be done the first time)
 # If False  will use lookupfiles if they exist (Faster option)
 forced_rerun = F
 
@@ -400,15 +400,11 @@ if(!is.null(EFSA_filepath) & !is.na(EFSA_filepath)){
                       'medium' = 'freshwater')                   # Set which mediums to use (regexp, check EFSA database for alternatives)
                                                                  # Additionally, duration filters, effect filters and endpoint filters can be set for the EFSA_filter_function
   
-  ## Functions required for EFSA import:
-  # EFSA_cleanup_function = dget('EFSA_cleanup_function.R')
-  # EFSA_filter_function = dget('EFSA_filter_function.R')
-  # QSAR_add_smiles_function = dget('QSAR_add_smiles_function.R')
-  
+
   # Import EFSA
   EFSA_handle = EFSA_import_function(EFSA_filepath,
                                      version = version,
-                                     rerun = F,
+                                     rerun = forced_rerun,
                                      filters = EFSA_filters,
                                      efsa_cir_lookupfile = paste0(intermediate_directory, '/EFSA_CIR_lookup.Rda'),
                                      ECx_to_NOEC = 'EC10',
@@ -451,15 +447,10 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
   # Set molweights file (if any) for the cleanup function
   ECOTOX_molweights_file = 'Additional data/molweight_lookup.Rda'
   
-  ## Functions required for ECOTOX import:
-  # ECOTOX_cleanup_function = dget('ECOTOX_cleanup_function.R')
-  # ECOTOX_filter_function = dget('ECOTOX_filter_function.R')
-  # QSAR_add_smiles_function = dget('QSAR_add_smiles_function.R')
-  
   # Import ECOTOX
   ECOTOX_handle = ECOTOX_import_function(ECOTOX_filepath = ECOTOX_filepath,
                                          version = version,
-                                         rerun = F,
+                                         rerun = forced_rerun,
                                          filters = ECOTOX_filters,
                                          molweight_lookup = ECOTOX_molweights_file,
                                          paste0(intermediate_directory, '/ECOTOX_identifiers_cir_lookup.Rda'),
@@ -476,6 +467,10 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
   print('No ECOTOX filepath provided, the rest of the script may not run properly without it')
   
 }
+
+# clean memory of filters
+rm(list = ls()[grep("(*filters$)", ls())])
+
 ################################################################################
 #           2.3. Merge data and identifiers                                    #
 ################################################################################
@@ -515,40 +510,33 @@ experimental_dataset = rbind(EFSA_filtered, ECOTOX_filtered)
 
 ### Merge the identifiers
 
-
-# Match columns
-# colnames(ECOTOX_identifiers)
-# colnames(EFSA_identifiers)
-
+# Add empty columns so we can rbind dataframes, for columns not standardizable
 ECOTOX_identifiers[,colnames(EFSA_identifiers)[!colnames(EFSA_identifiers) %in% colnames(ECOTOX_identifiers)]] <- NA
 EFSA_identifiers[,colnames(ECOTOX_identifiers)[!colnames(ECOTOX_identifiers) %in% colnames(EFSA_identifiers)]] <- NA
-
-
-
 
 # rbind the identifiers
 identifiers = rbind(EFSA_identifiers, ECOTOX_identifiers)
 
 # Check total
-nrow(identifiers)
+paste0('Total (non-unique) chemicals in identifiers: ', nrow(identifiers))
 
 # Remove duplicates
 identifiers = identifiers %>% distinct(original_CAS, .keep_all = T)
 
 # Check total
-nrow(identifiers)
+paste0('Total (unique) chemicals in identifiers: ', nrow(identifiers))
 
 # Remove entries with dots (salts) or empty fields (no SMILES found) or special characters
 identifiers = identifiers[!grepl(identifiers$original_SMILES, pattern = '\\.') & !identifiers$original_SMILES == '' & !grepl(identifiers$original_SMILES, pattern = '\\%') & !grepl(identifiers$original_SMILES, pattern = '\\|'),]
 
 # Check total
-nrow(identifiers)
+paste0('Total (unique, non-salt) chemicals in identifiers: ', nrow(identifiers))
 
 # Remove entries without SMILES
 identifiers = identifiers[!is.na(identifiers$original_SMILES),]
 
 # Check total
-nrow(identifiers)
+paste0('Total (unique, non-salt, with SMILES) chemicals in identifiers: ', nrow(identifiers))
 
 
 # Get inchikeys for all compounds (if it isnt there already)
@@ -558,12 +546,11 @@ identifiers = QSAR_add_inchikey_function(
   local_lookupfile = paste0(intermediate_directory, '/inchikey_lookupfile.Rda'))
 
 
-
 # Add molecule_number to identifiers
 identifiers$molecule_number = seq(1, nrow(identifiers), 1)
 
 
-## Save the identifiers (CAS and SMILES) into the QSAR directory
+## Save the identifiers (CAS and SMILES) into the QSAR directory for generating predictions
 
 # Make QSAR folder if it doesnt exist
 if(!file.exists(QSAR_directory)){
@@ -584,19 +571,19 @@ if(file.exists(paste0(QSAR_directory, '/identifiers/SMILES.txt'))){
 }
 
 
-# CAS
+# CAS (Not used under normal settings)
 write.table(identifiers[,"original_CAS"],
             file = paste0(QSAR_directory, '/identifiers/CAS.txt'),
             col.names = F,
             row.names = F,
             quote = F)
-# SMILES
+# SMILES (primary input to ECOSAR and T.E.S.T.)
 write.table(identifiers[,"original_SMILES"],
             file = paste0(QSAR_directory, '/identifiers/SMILES.txt'),
             col.names = F,
             row.names = F,
             quote = F)
-# CAS and SMILES
+# CAS and SMILES (primary input to VEGA)
 write.table(identifiers[,c("original_CAS", "original_SMILES")],
             file = paste0(QSAR_directory, '/identifiers/CASSMILES.txt'),
             sep = '\t',
@@ -632,13 +619,20 @@ if(nrow(identifiers) > 1000){
                   row.names = F,
                   quote = F)
       
-      # Save the 3k to end entries
-      # Elongate this if more than 4k entries
-      write.table(identifiers[3001:nrow(identifiers),"original_SMILES"],
-                  file = paste0(QSAR_directory, '/identifiers/SMILES_3001toEnd.txt'),
-                  col.names = F,
-                  row.names = F,
-                  quote = F)
+      if(nrow(identifiers) > 4000){
+      
+        # Support for >4000 chemicals not implemented, but you can fix it by adding to this loop.
+        print('More than 4000 entries, please increase the length of this loop to save longer lists')
+        
+      } else {
+      
+        write.table(identifiers[3001:nrow(identifiers),"original_SMILES"],
+                    file = paste0(QSAR_directory, '/identifiers/SMILES_3001toEnd.txt'),
+                    col.names = F,
+                    row.names = F,
+                    quote = F)
+        
+      }
       
       
     } else {
@@ -773,7 +767,7 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_cid_lookup.R
   
   for(i in 1:nrow(identifiers)){
     
-    # For any identifiers not covered in our dupfile, we do the query as in the previous part
+    # For any identifiers not covered in our lookupfile, we do the query as in the previous part
 
     if(!is.na(identifiers[i, 'CID'])){
       next
@@ -813,74 +807,75 @@ sum(is.na(identifiers$CID))
 print(identifiers[is.na(identifiers$CID),"original_CAS"])
 
 
-# # This part needs to be run once per new iteration of the lookup file, add more as needed
-# identifiers[identifiers$original_CAS == "110488-70-5", 'CID'] = '5889665'
-# identifiers[identifiers$original_CAS == "16752-77-5", 'CID'] = '5353758'
-# identifiers[identifiers$original_CAS == "11141-17-6", 'CID'] = '5281303'
-# identifiers[identifiers$original_CAS == "82657-04-3", 'CID'] = '6442842'
-# identifiers[identifiers$original_CAS == "131860-33-8", 'CID'] = '3034285'
-# identifiers[identifiers$original_CAS == "101007-06-1", 'CID'] = '6436606'
-# identifiers[identifiers$original_CAS == "141517-21-7", 'CID'] = '11664966'
-# identifiers[identifiers$original_CAS == "51596-11-3", 'CID'] = '9959038'
-# identifiers[identifiers$original_CAS == "143390-89-0", 'CID'] = '6112114'
-# identifiers[identifiers$original_CAS == "79538-32-2", 'CID'] = '11534837'
-# identifiers[identifiers$original_CAS == "131983-72-7", 'CID'] = '6537961'
-# identifiers[identifiers$original_CAS == "542-75-6", 'CID'] = '24883'
-# identifiers[identifiers$original_CAS == "60-54-8" , 'CID'] = '54675776'
-# identifiers[identifiers$original_CAS == "8025-81-8", 'CID'] = '6419898'
-# identifiers[identifiers$original_CAS == "34010-21-4" , 'CID'] = '5364711'
-# identifiers[identifiers$original_CAS == "4170-30-3"  , 'CID'] = '447466'
-# identifiers[identifiers$original_CAS == "80214-83-1" , 'CID'] = '6915744'
-# identifiers[identifiers$original_CAS == "153719-23-4", 'CID'] = '5821911'
-# identifiers[identifiers$original_CAS == "91465-08-6", 'CID'] = '6440557'
-# identifiers[identifiers$original_CAS == "73851-70-4", 'CID'] = '3033889'
-# identifiers[identifiers$original_CAS == "17924-92-4" , 'CID'] = '5281576'
-# identifiers[identifiers$original_CAS == "117704-25-3" , 'CID'] = '9832750'
-# identifiers[identifiers$original_CAS == "141-66-2"    , 'CID'] = '5371560'
-# identifiers[identifiers$original_CAS == "25875-51-8"  , 'CID'] = '9570438'
-# identifiers[identifiers$original_CAS == "54739-18-3"  , 'CID'] = '5324346'
-# identifiers[identifiers$original_CAS == "68085-85-8" , 'CID'] = '5281873'
-# identifiers[identifiers$original_CAS == "59-87-0" , 'CID'] = '5447130'
-# identifiers[identifiers$original_CAS == "7786-34-7", 'CID'] = '5355863'
-# identifiers[identifiers$original_CAS == "470-90-6" , 'CID'] = '10107'
-# identifiers[identifiers$original_CAS == "6923-22-4"  , 'CID'] = '5371562'
-# identifiers[identifiers$original_CAS == "76703-62-3" , 'CID'] = '6440554'
-# identifiers[identifiers$original_CAS == "31218-83-4" , 'CID'] = '5372405'
-# identifiers[identifiers$original_CAS == "76703-65-6" , 'CID'] = '6440557'
-# identifiers[identifiers$original_CAS == "13171-21-6" , 'CID'] = '25750'
-# identifiers[identifiers$original_CAS == "7166-19-0"  , 'CID'] = '6508331'
-# identifiers[identifiers$original_CAS == "112-80-1", 'CID'] = '445639'
-# identifiers[identifiers$original_CAS == "19902-04-6"  , 'CID'] = '6439694'
-# identifiers[identifiers$original_CAS == "361377-29-9"  , 'CID'] = '11048796'
-# identifiers[identifiers$original_CAS == "13411-16-0" , 'CID'] = '6436061'
-# identifiers[identifiers$original_CAS == "20056-92-2"  , 'CID'] = '5362794'
-# identifiers[identifiers$original_CAS == "928-97-2"  , 'CID'] = '5284503'
-# identifiers[identifiers$original_CAS == "592-46-1" , 'CID'] = '638071'
-# identifiers[identifiers$original_CAS == "928-96-1" , 'CID'] = '5281167'
-# identifiers[identifiers$original_CAS == "79-77-6"  , 'CID'] = '638014'
-# identifiers[identifiers$original_CAS == "15271-41-7" , 'CID'] = '76970394'
-# identifiers[identifiers$original_CAS == "141-05-9" , 'CID'] = '5271566'
-# identifiers[identifiers$original_CAS == "94-62-2", 'CID'] = '638024'
-# identifiers[identifiers$original_CAS == "94-67-7"     , 'CID'] = '135408751'
-# identifiers[identifiers$original_CAS == "107-29-9" , 'CID'] = '5324279'
-# identifiers[identifiers$original_CAS == "22910-86-7", 'CID'] = '5281852'
-# identifiers[identifiers$original_CAS == "62037-80-3", 'CID'] = '51342034'
-# identifiers[identifiers$original_CAS == "101043-37-2", 'CID'] = '445434'
-# identifiers[identifiers$original_CAS == "10028-15-6" , 'CID'] = '24823'
+# This part needs to be run once per new iteration of the lookup file, add more as needed
+if(forced_rerun){
+  identifiers[identifiers$original_CAS == "110488-70-5", 'CID'] = '5889665'
+  identifiers[identifiers$original_CAS == "16752-77-5", 'CID'] = '5353758'
+  identifiers[identifiers$original_CAS == "11141-17-6", 'CID'] = '5281303'
+  identifiers[identifiers$original_CAS == "82657-04-3", 'CID'] = '6442842'
+  identifiers[identifiers$original_CAS == "131860-33-8", 'CID'] = '3034285'
+  identifiers[identifiers$original_CAS == "101007-06-1", 'CID'] = '6436606'
+  identifiers[identifiers$original_CAS == "141517-21-7", 'CID'] = '11664966'
+  identifiers[identifiers$original_CAS == "51596-11-3", 'CID'] = '9959038'
+  identifiers[identifiers$original_CAS == "143390-89-0", 'CID'] = '6112114'
+  identifiers[identifiers$original_CAS == "79538-32-2", 'CID'] = '11534837'
+  identifiers[identifiers$original_CAS == "131983-72-7", 'CID'] = '6537961'
+  identifiers[identifiers$original_CAS == "542-75-6", 'CID'] = '24883'
+  identifiers[identifiers$original_CAS == "60-54-8" , 'CID'] = '54675776'
+  identifiers[identifiers$original_CAS == "8025-81-8", 'CID'] = '6419898'
+  identifiers[identifiers$original_CAS == "34010-21-4" , 'CID'] = '5364711'
+  identifiers[identifiers$original_CAS == "4170-30-3"  , 'CID'] = '447466'
+  identifiers[identifiers$original_CAS == "80214-83-1" , 'CID'] = '6915744'
+  identifiers[identifiers$original_CAS == "153719-23-4", 'CID'] = '5821911'
+  identifiers[identifiers$original_CAS == "91465-08-6", 'CID'] = '6440557'
+  identifiers[identifiers$original_CAS == "73851-70-4", 'CID'] = '3033889'
+  identifiers[identifiers$original_CAS == "17924-92-4" , 'CID'] = '5281576'
+  identifiers[identifiers$original_CAS == "117704-25-3" , 'CID'] = '9832750'
+  identifiers[identifiers$original_CAS == "141-66-2"    , 'CID'] = '5371560'
+  identifiers[identifiers$original_CAS == "25875-51-8"  , 'CID'] = '9570438'
+  identifiers[identifiers$original_CAS == "54739-18-3"  , 'CID'] = '5324346'
+  identifiers[identifiers$original_CAS == "68085-85-8" , 'CID'] = '5281873'
+  identifiers[identifiers$original_CAS == "59-87-0" , 'CID'] = '5447130'
+  identifiers[identifiers$original_CAS == "7786-34-7", 'CID'] = '5355863'
+  identifiers[identifiers$original_CAS == "470-90-6" , 'CID'] = '10107'
+  identifiers[identifiers$original_CAS == "6923-22-4"  , 'CID'] = '5371562'
+  identifiers[identifiers$original_CAS == "76703-62-3" , 'CID'] = '6440554'
+  identifiers[identifiers$original_CAS == "31218-83-4" , 'CID'] = '5372405'
+  identifiers[identifiers$original_CAS == "76703-65-6" , 'CID'] = '6440557'
+  identifiers[identifiers$original_CAS == "13171-21-6" , 'CID'] = '25750'
+  identifiers[identifiers$original_CAS == "7166-19-0"  , 'CID'] = '6508331'
+  identifiers[identifiers$original_CAS == "112-80-1", 'CID'] = '445639'
+  identifiers[identifiers$original_CAS == "19902-04-6"  , 'CID'] = '6439694'
+  identifiers[identifiers$original_CAS == "361377-29-9"  , 'CID'] = '11048796'
+  identifiers[identifiers$original_CAS == "13411-16-0" , 'CID'] = '6436061'
+  identifiers[identifiers$original_CAS == "20056-92-2"  , 'CID'] = '5362794'
+  identifiers[identifiers$original_CAS == "928-97-2"  , 'CID'] = '5284503'
+  identifiers[identifiers$original_CAS == "592-46-1" , 'CID'] = '638071'
+  identifiers[identifiers$original_CAS == "928-96-1" , 'CID'] = '5281167'
+  identifiers[identifiers$original_CAS == "79-77-6"  , 'CID'] = '638014'
+  identifiers[identifiers$original_CAS == "15271-41-7" , 'CID'] = '76970394'
+  identifiers[identifiers$original_CAS == "141-05-9" , 'CID'] = '5271566'
+  identifiers[identifiers$original_CAS == "94-62-2", 'CID'] = '638024'
+  identifiers[identifiers$original_CAS == "94-67-7"     , 'CID'] = '135408751'
+  identifiers[identifiers$original_CAS == "107-29-9" , 'CID'] = '5324279'
+  identifiers[identifiers$original_CAS == "22910-86-7", 'CID'] = '5281852'
+  identifiers[identifiers$original_CAS == "62037-80-3", 'CID'] = '51342034'
+  identifiers[identifiers$original_CAS == "101043-37-2", 'CID'] = '445434'
+  identifiers[identifiers$original_CAS == "10028-15-6" , 'CID'] = '24823'
+}
+
 
 # Double check that we are done
 sum(is.na(identifiers$CID))
 print(identifiers[is.na(identifiers$CID),"original_CAS"])
 
+# Save intermediate file after adding CID
 save(identifiers, file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
 # load(file = paste0(intermediate_directory, '/identifiers_cid_lookup.Rda'))
 
 
 ### Get logp and pka
 
-# Make empty frames first time
-logp_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = NA, 'SourceID' = NA)
-pka_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = NA, 'SourceID' = NA)
 
 # If we have run this script before we load the output
 if(file.exists(paste0(intermediate_directory, '/logp_lookup.Rda')) & file.exists(paste0(intermediate_directory, '/pka_lookup.Rda'))){
@@ -888,8 +883,15 @@ if(file.exists(paste0(intermediate_directory, '/logp_lookup.Rda')) & file.exists
   load(file = paste0(intermediate_directory, '/logp_lookup.Rda'))
   load(file = paste0(intermediate_directory, '/pka_lookup.Rda'))
   
+} else {
+  
+  # Make empty frames
+  logp_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = NA, 'SourceID' = NA)
+  pka_frame = data.frame('CID' = NA, 'Name' = NA, 'Result' = NA, 'SourceName' = NA, 'SourceID' = NA)
+  
 }
 
+# Loop to collect logP and pKa from PubChem
 for(i in 1:nrow(identifiers)){  
   
   current_CID = identifiers[i, "CID"]
@@ -947,7 +949,7 @@ for(i in 1:nrow(identifiers)){
   
 }
 
-# Drop the NA rows in the beginning and do a last save
+# Drop the NA rows in the beginning and do a save
 logp_frame = logp_frame[rowSums(is.na(logp_frame)) != ncol(logp_frame),]
 pka_frame = pka_frame[rowSums(is.na(pka_frame)) != ncol(pka_frame),]
 save(logp_frame, file = paste0(intermediate_directory, '/logp_lookup.Rda'))
@@ -961,10 +963,7 @@ identifiers$logkow = NA
 identifiers$logkow_source = NA
 identifiers$pka = NA
 
-# Create a list to "fix by hand" for entries with multiple values for different pH etc
-temp_logp_fix_by_hand = list()
-
-
+# If we are doing a new rerun
 if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_lookup.Rda')) | forced_rerun){
   
   for(i in 1:nrow(identifiers)){  
@@ -1284,12 +1283,13 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_l
   
 }
 
+# Change 'NA' to NA
 identifiers$logkow = ifelse(identifiers$logkow == 'NA', NA, identifiers$logkow)
 
 # Some substances we fail to get lokkow for
 nrow(identifiers[is.na(identifiers$logkow),])
 
-# Save all identifiers, for work on other systems
+# Save all identifiers
 save(identifiers, file = paste0(intermediate_directory, '/identifiers_v', version, '.Rda'))
 #load(file = paste0(intermediate_directory, '/identifiers_v', version, '.Rda'))
 
@@ -1298,7 +1298,7 @@ save(identifiers, file = paste0(intermediate_directory, '/identifiers_v', versio
 #             3. Running QSAR_processing                                       #
 ################################################################################
 
-# Option to turn off running the QSARS (the output files are already there, and you just want to recompile them)
+# Option to turn off running the QSARS (if the output files are already there, and you just want to recompile them)
 run_QSARs = FALSE
 
 QSAR_processing_function = dget('Functions/QSAR_processing_function.R')
@@ -1325,6 +1325,10 @@ save(QSAR_output, file = paste0(intermediate_directory, '/qsar_data_', version, 
 # Load QSAR_output dataframe to avoid extra work
 load(file = paste0(intermediate_directory, '/qsar_data_', version, '.Rda'))
 
+# We call the subset reduction function to gather and curate the QSAR output
+# The function is run individually for each endpoint
+# For ECOSAR and VEGA a "calculated" model is computed in up to two methods
+# For VEGA there is also a filter for reliability (AD) scores
 QSAR_daphnia_acute = QSAR_subset_reduction_function(QSAR_output, 
                                                     species = 'daphnia', 
                                                     in_format = "long",
@@ -1407,26 +1411,24 @@ QSAR_algae_chronic = QSAR_subset_reduction_function(QSAR_output,
                                                     ecosar_method2 = c('low', 'drop baseline'),
                                                     data_filter = 'all')
 
+# Put all the curated QSAR predictions into one dataframe
 QSAR_all = do.call("rbind", list(QSAR_daphnia_acute, QSAR_daphnia_chronic, QSAR_fish_acute, QSAR_fish_chronic, QSAR_algae_acute, QSAR_algae_chronic))
-
-
-
-# Sometimes some ChV stays, but we fixed that, lets just rename them to NOEC here
-QSAR_all$model_endpoint = ifelse(QSAR_all$model_endpoint == 'NOEC ChV', 'NOEC', QSAR_all$model_endpoint)
 
 save(QSAR_all, file = paste0(intermediate_directory, '/QSAR_all_processec_v', version, '.Rda'))
 #load(file = paste0(intermediate_directory, '/QSAR_all_processec_v', version, '.Rda'))
 
-
+# Clean memory of the individual endpoint QSAR frames and QSAR output
+rm(list = ls()[grep("^QSAR_.*_(acute)|(chronic)", ls())])
+rm(list = ls()[grep("QSAR_output", ls())])
 
 ################################################################################
 #               4.1. Reformatting data to wide format "big QSAR database"      #
 ################################################################################
 
 # ECOSAR outputs some alternative salts for some substances, which makes pivot
-# not work correctly, we remove these
+# not work correctly, find the correct substance first
 
-# Save an "ld" version to see how much was removed in the process
+# Save an "old" version to see how much was removed in the process
 ECOSAR_subset_old = QSAR_all[QSAR_all$QSAR_tool == 'ECOSAR' & is.na(QSAR_all$reliability),]
 
 ECOSAR_subset = distinct_at(QSAR_all[QSAR_all$QSAR_tool == 'ECOSAR' & is.na(QSAR_all$reliability),], .vars = c('original_SMILES', 'model', 'value'), .keep_all = T)
@@ -1520,11 +1522,15 @@ for(i in 1:length(ECOSAR_CAS)){
   
 }
 
-# Remove all ECOSAR predictions
+
+# Remove all ECOSAR predictions (but not removing calculated values)
 QSAR_all_deduped = QSAR_all[!(QSAR_all$QSAR_tool == 'ECOSAR' & is.na(QSAR_all$reliability)),]
 
 # Add the new filtered down predictions
 QSAR_all_deduped = rbind(QSAR_all_deduped, ECOSAR_subset)
+
+# Clean memory of ECOSAR subset
+rm(list = ls()[grep("ECOSAR_subset", ls())])
 
 # Remove EXPERIMENTAL T.E.S.T. predictions
 QSAR_all_deduped = QSAR_all_deduped[!(QSAR_all_deduped$QSAR_tool == 'T.E.S.T.' & QSAR_all_deduped$reliability == 'EXPERIMENTAL'),]
@@ -1542,12 +1548,14 @@ QSAR_vega_wide = as.data.frame(pivot_wider(QSAR_all_deduped_vega_raw_only, names
 # Rearrange the columns
 QSAR_vega_wide = QSAR_vega_wide[,order(colnames(QSAR_vega_wide))]
 
-# We do this based on CAS due to HEXADRIN and DIELDRIN having the same SMILES :O :O but ECOSAR manages to provide predictions for the correct substances...
+# We do this based on CAS due to HEXADRIN and DIELDRIN having the same SMILES :O but ECOSAR manages to provide predictions for the correct substances...
 QSAR_all_wide = as.data.frame(pivot_wider(QSAR_all_deduped_no_vega, names_from = c(model), values_from = c(value), id_cols = original_CAS, ))
 
 # Add VEGA
 QSAR_all_wide = merge(QSAR_all_wide, QSAR_vega_wide, by = 'original_CAS')
 
+# Clean memory of VEGA wide
+rm(list = ls()[grep("QSAR_vega_wide", ls())])
 
 
 ## Fix column names
@@ -1597,6 +1605,12 @@ for(i in 1:ncol(QSAR_all_wide)){
   
 }
 
+# Clean memory of temporary objects
+rm(list = ls()[grep("(*_deduped_*)|(^current*)", ls())])
+
+
+
+
 # Add internal database identifier for each compound
 QSAR_all_wide$META_QSARn = paste0('QSARn', as.numeric(rownames(QSAR_all_wide)))
 
@@ -1604,6 +1618,9 @@ QSAR_all_wide$META_QSARn = paste0('QSARn', as.numeric(rownames(QSAR_all_wide)))
 QSAR_all_wide = QSAR_all_wide %>%
   relocate(META_InChIKey, .after = META_original_SMILES) %>%
   relocate(META_QSARn)
+
+# Add the QSARn to identifiers
+identifiers = merge(identifiers, QSAR_all_wide[,c("META_original_CAS", "META_QSARn")], by.x = 'original_CAS', by.y = 'META_original_CAS', all.x = T)
 
 # Rearrange "calculated" columns to be last for the specific QSAR platforms (and keeping META columns first)
 meta_coln_id = str_detect(colnames(QSAR_all_wide), pattern = 'META_')
@@ -1656,7 +1673,7 @@ for(i in 1:ncol(identifiers)){
 write.table(identifiers, file = paste0(output_directory, '/identifiers.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')
 
 # Double check save
-identifiers_new = fread(file = paste0(output_directory, '/identifiers.tsv'), sep = '\t')
+# identifiers_new = fread(file = paste0(output_directory, '/identifiers.tsv'), sep = '\t')
 
 # Note that there are some compounds from the original empirical data for which we have no QSAR predictions
 identifiers_missing_predictions = identifiers[!identifiers$original_CAS %in% QSAR_all_wide$META_original_CAS,]
@@ -1684,6 +1701,12 @@ for(i in 1:ncol(experimental_dataset)){
   experimental_dataset[,i] = current_column
   
 }
+
+# Remove current and temp objects
+rm(list = ls()[grep("(^temp*)|(^current*)", ls())])
+
+# Clean memory of backup and old
+rm(list = ls()[grep("(*backup$)|(*_old$)|(^old*)", ls())])
 
 # Save empirical data in output folder
 write.table(experimental_dataset, file = paste0(output_directory, '/experimental_dataset.tsv'), sep = '\t', col.names = T, row.names = F, quote = F, fileEncoding = 'UTF-8')

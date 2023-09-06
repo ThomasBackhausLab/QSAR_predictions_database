@@ -4,6 +4,18 @@ This repository contains the script(s) and output data described in the "Dataset
 
 These scripts may be used under the Creative Commons Attribution-NonCommercial (CC-BY-NC) license, if you need to cite it please use the CITATION.cff. 
 
+## Main output
+
+The main output can be found in the "Output" folder.
+They can also be accessed through these links:
+
+|Output file|Description|
+|-----------|-----------|
+[QSAR_predictions.tsv](Output/QSAR_predictions.tsv)|QSAR predictions database, wide format|
+[experimental_dataset.tsv](Output/experimental_dataset.tsv)|Curated empirical data, long format|
+[identifiers.tsv](Output/identifiers.tsv)|The identifiers and physico-chemical data of compounds in the QSAR database and experimental data|
+[QSAR_predictions_database_content_descriptions.xlsx](Output/QSAR_predictions_database_content_descriptions.xlsx)|Excel sheets describing the contents of the database, empirical data and identifiers|
+
 
 ## Below follows a short guide to using the script
 

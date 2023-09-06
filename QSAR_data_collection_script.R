@@ -207,7 +207,7 @@
 #
 # The merged empirical data
 #
-# ----identifiers_12.Rda" 
+# ----identifiers_v12.Rda" 
 #
 # The chemical identifiers and physicochemical data used in the QSAR predictions datbase project 
 # ----"identifiers_cid_lookup.Rda" 

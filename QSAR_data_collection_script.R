@@ -269,7 +269,8 @@ packages <- c('dplyr',
               'readxl', 
               'stringr',
               'data.table',
-              'webchem')
+              'webchem',
+              'R.utils')
 
 lapply(packages, require, character.only = TRUE)
 
@@ -284,7 +285,6 @@ lapply(packages, require, character.only = TRUE)
 # 'gridtext',
 # 'grid',
 # 'hms',
-# 'R.utils'
 # 'MASS'
 
 # # Specific package handling for JAVA
@@ -313,7 +313,7 @@ intermediate_directory <- 'C:/Git/QSAR_predictions_database/Intermediate files'
 
 ## Paths to raw data (These can be very large files and may not be suited for storage in git directory)
 EFSA_filepath = 'E:/Datasets/EFSA/Full table.xlsx'
-ECOTOX_filepath = 'E:/Datasets/US_EPA_ECOTOX/ecotox_ascii_09_15_2022'
+ECOTOX_filepath = 'E:/Datasets/US_EPA_ECOTOX/ecotox_ascii_09_14_2023'
 
 
 # QSAR directory (function will make subfolders here)
@@ -346,7 +346,7 @@ version = 12
 ## Set forced rerun
 # If True   will regenerate all lookupfiles    (Slow option, has to be done the first time)
 # If False  will use lookupfiles if they exist (Faster option)
-forced_rerun = F
+forced_rerun = T
 
 ## Set standard species for fish and algae (synonyms on same rows, unique species on new row)
 oecd_fish_species = c('Danio rerio', 'Cyprinus rerio', 'Brachydanio rerio',
@@ -404,7 +404,7 @@ if(!is.null(EFSA_filepath) & !is.na(EFSA_filepath)){
   # Import EFSA
   EFSA_handle = EFSA_import_function(EFSA_filepath,
                                      version = version,
-                                     rerun = forced_rerun,
+                                     rerun = FALSE,
                                      filters = EFSA_filters,
                                      efsa_cir_lookupfile = paste0(intermediate_directory, '/EFSA_CIR_lookup.Rda'),
                                      ECx_to_NOEC = 'EC10',
@@ -450,7 +450,7 @@ if(!is.null(ECOTOX_filepath) & !is.na(ECOTOX_filepath)){
   # Import ECOTOX
   ECOTOX_handle = ECOTOX_import_function(ECOTOX_filepath = ECOTOX_filepath,
                                          version = version,
-                                         rerun = forced_rerun,
+                                         rerun = FALSE,
                                          filters = ECOTOX_filters,
                                          molweight_lookup = ECOTOX_molweights_file,
                                          paste0(intermediate_directory, '/ECOTOX_identifiers_cir_lookup.Rda'),
@@ -1192,10 +1192,11 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_l
     
     if(is.na(identifiers[i, "pka"]) & nrow(temp_pka) > 0){
       
-      print('pka results:')
-      print(temp_pka)
-      print('pKa saved:')
-      print(identifiers[i, "pka"])
+      # For when you add more compounds to the list, get any troublemakers from this code
+      # print('pka results:')
+      # print(temp_pka)
+      # print('pKa saved:')
+      # print(identifiers[i, "pka"])
       
       
     }
@@ -1241,6 +1242,21 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_l
   identifiers[identifiers$CID == '17349', "logkow"] = 5.32
   identifiers[identifiers$CID == '17349', "logkow_source"] = 'experimental'  
   
+  # 6046 N-Nitrosomorpholine log Kow = -0.44. Hazardous Substances Data Bank (HSDB) 4308
+  identifiers[identifiers$CID == '6046', "logkow"] = -0.44
+  identifiers[identifiers$CID == '6046', "logkow_source"] = 'experimental'  
+  
+  # 6375 Nitromethane low Kow = -0.35 Hazardous Substances Data Bank (HSDB) 106
+  identifiers[identifiers$CID == '6375', "logkow"] = -0.35
+  identifiers[identifiers$CID == '6375', "logkow_source"] = 'experimental'  
+  
+  # 69785 Perfluorooctanesulfonamide log Kow = 5.8(est) Hazardous Substances Data Bank (HSDB) 8039
+  identifiers[identifiers$CID == '69785', "logkow"] = 5.8
+  identifiers[identifiers$CID == '69785', "logkow_source"] = 'experimental'  
+  
+  # 7881 Dibutyl phosphate 0.6-1.4 ILO-WHO International Chemical Safety Cards (ICSCs) 1278
+  identifiers[identifiers$CID == '7881', "logkow"] = median(c(0.6, 1.4))
+  identifiers[identifiers$CID == '7881', "logkow_source"] = 'median experimental'  
   
   
   ## Finally some I was not able to fix
@@ -1257,7 +1273,7 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_l
   identifiers[identifiers$CID == '8121', "logkow"] = NA         # Unsure how to handle this
   identifiers[identifiers$CID == '8121', "logkow_source"] = 'experimental'  
   
-  
+  # 8371 Chloranil 3-4.9 ILO International Chemical Safety Cards (ICSC) 0780
   
   
   
@@ -1275,6 +1291,20 @@ if(!file.exists(file = paste0(intermediate_directory, '/identifiers_logkow_pka_l
   # 2,3,4,5-Tetrachlorophenol pKa=6.35 Hazardous Substances Data Bank (HSDB)     6765
   identifiers[identifiers$CID == '21013', "pka"] = '6.35'
   
+  # p-Phenylenediamine The pKa value of the conjugate acid is 6.2 Hazardous Substances Data Bank (HSDB)
+  identifiers[identifiers$CID == '7814', "pka"] = '6.2'
+  
+  # 2-Chlorobenzoic acid PKA 2.89 Hazardous Substances Data Bank (HSDB)
+  identifiers[identifiers$CID == '8274', "pka"] = '2.89'
+  
+  # 1-Naphthylamine pKa of 3.92 at 25 °C Hazardous Substances Data Bank (HSDB)     1080
+  identifiers[identifiers$CID == '8640', "pka"] = '3.92'
+  
+  # 447 3-Chlorobenzoic acid PKA 3.82 Hazardous Substances Data Bank (HSDB)     6018
+  identifiers[identifiers$CID == '447', "pka"] = '3.82'
+  
+  
+  
   save(identifiers, file = paste0(intermediate_directory, '/identifiers_logkow_pka_lookup.Rda'))
   
 } else {
@@ -1289,6 +1319,10 @@ identifiers$logkow = ifelse(identifiers$logkow == 'NA', NA, identifiers$logkow)
 # Some substances we fail to get lokkow for
 nrow(identifiers[is.na(identifiers$logkow),])
 
+# Check which for troubleshooting
+CID_missing_logP = identifiers[is.na(identifiers$logkow), "CID"]
+logP_issues = logp_frame[logp_frame$CID %in% CID_missing_logP,]
+
 # Save all identifiers
 save(identifiers, file = paste0(intermediate_directory, '/identifiers_v', version, '.Rda'))
 #load(file = paste0(intermediate_directory, '/identifiers_v', version, '.Rda'))
@@ -1299,7 +1333,7 @@ save(identifiers, file = paste0(intermediate_directory, '/identifiers_v', versio
 ################################################################################
 
 # Option to turn off running the QSARS (if the output files are already there, and you just want to recompile them)
-run_QSARs = FALSE
+run_QSARs = TRUE
 
 QSAR_processing_function = dget('Functions/QSAR_processing_function.R')
 
